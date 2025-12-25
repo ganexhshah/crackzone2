@@ -1,0 +1,243 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const passport = require('../config/passport');
+const pool = require('../config/database');
+const { authenticateToken } = require('../middleware/auth');
+
+const router = express.Router();
+
+// Register
+router.post('/register', async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // Check if user exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [email, username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'User already exists' });
+    }
+
+    // Hash password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Create user
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password_hash, auth_provider, is_profile_complete) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, email, created_at',
+      [username, email, hashedPassword, 'local', true]
+    );
+
+    const user = result.rows[0];
+
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      message: 'User created successfully',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        createdAt: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// Login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // Find user
+    const result = await pool.query(
+      'SELECT id, username, email, password_hash, auth_provider, is_profile_complete FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = result.rows[0];
+
+    // Check if user registered with Google
+    if (user.auth_provider === 'google') {
+      return res.status(400).json({ error: 'Please sign in with Google' });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isProfileComplete: user.is_profile_complete
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Google OAuth routes
+router.get('/google', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(400).json({ error: 'Google OAuth not configured' });
+  }
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+
+router.get('/google/callback', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.redirect(`${process.env.CORS_ORIGIN}/login?error=oauth_not_configured`);
+  }
+  
+  passport.authenticate('google', { session: false }, async (err, user) => {
+    if (err) {
+      console.error('Google callback error:', err);
+      return res.redirect(`${process.env.CORS_ORIGIN}/login?error=auth_failed`);
+    }
+    
+    if (!user) {
+      return res.redirect(`${process.env.CORS_ORIGIN}/login?error=auth_failed`);
+    }
+
+    try {
+      // Generate JWT for the user
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: '7d' }
+      );
+
+      // Redirect to frontend with token and profile completion status
+      const redirectUrl = `${process.env.CORS_ORIGIN}/auth/callback?token=${token}&profileComplete=${user.is_profile_complete}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google callback error:', error);
+      res.redirect(`${process.env.CORS_ORIGIN}/login?error=auth_failed`);
+    }
+  })(req, res, next);
+});
+
+// Complete profile after Google OAuth
+router.post('/complete-profile', authenticateToken, async (req, res) => {
+  try {
+    const { username, game, gameUid } = req.body;
+    const userId = req.user.id;
+
+    if (!username || !game) {
+      return res.status(400).json({ error: 'Username and game selection are required' });
+    }
+
+    // Check if username is taken
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1 AND id != $2',
+      [username, userId]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+
+    // Update user profile
+    await pool.query(
+      'UPDATE users SET username = $1, is_profile_complete = $2 WHERE id = $3',
+      [username, true, userId]
+    );
+
+    // Add game profile if provided
+    if (gameUid && game === 'freefire') {
+      await pool.query(
+        'INSERT INTO game_profiles (user_id, game, game_uid, is_primary) VALUES ($1, $2, $3, $4) ON CONFLICT (user_id, game) DO UPDATE SET game_uid = $3, is_primary = $4',
+        [userId, game, gameUid, true]
+      );
+    }
+
+    // Get updated user data
+    const updatedUser = await pool.query(
+      'SELECT id, username, email, profile_picture_url, is_profile_complete FROM users WHERE id = $1',
+      [userId]
+    );
+
+    res.json({
+      message: 'Profile completed successfully',
+      user: updatedUser.rows[0]
+    });
+  } catch (error) {
+    console.error('Profile completion error:', error);
+    res.status(500).json({ error: 'Failed to complete profile' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, profile_picture_url, is_profile_complete FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = result.rows[0];
+
+    // Get game profiles
+    const gameProfiles = await pool.query(
+      'SELECT game, game_uid, game_username, is_primary FROM game_profiles WHERE user_id = $1',
+      [user.id]
+    );
+
+    res.json({ 
+      user: {
+        ...user,
+        gameProfiles: gameProfiles.rows
+      }
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
+module.exports = router;
