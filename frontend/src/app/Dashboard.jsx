@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   User, Trophy, Calendar, Settings, LogOut, Gamepad2, Users, Target, 
-  Clock, Flame, ArrowRight, TrendingUp, Wallet, Bell 
+  Clock, Flame, ArrowRight, TrendingUp, Wallet, Bell, Search, Plus,
+  Zap, Star, Award, ChevronRight, Play, Eye
 } from 'lucide-react'
 import DashboardNavbar from './DashboardNavbar'
 import MobileBottomMenu from './MobileBottomMenu'
@@ -129,6 +130,17 @@ const Dashboard = () => {
     }
   }
 
+  const filterByUserGame = (items) => {
+    // If user has a primary game preference, filter content by that game
+    if (user?.primary_game && user.primary_game !== 'both') {
+      return items.filter(item => 
+        item.game?.toLowerCase() === user.primary_game.toLowerCase() ||
+        !item.game // Include items without specific game
+      );
+    }
+    return items;
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Won': return 'text-green-400'
@@ -155,19 +167,51 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-crackzone-black via-crackzone-gray to-crackzone-black">
+    <div className="min-h-screen bg-gradient-to-br from-crackzone-black via-crackzone-gray to-crackzone-black main-app">
       <DashboardNavbar />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
-        {/* Welcome Section */}
+        {/* Modern Hero Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">
-            Welcome back, {user?.username || 'Gamer'}!
-          </h2>
-          <p className="text-gray-400">Ready to dominate the battlefield?</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
+                Welcome back, <span className="text-crackzone-yellow">{user?.username || 'Gamer'}</span>!
+              </h1>
+              <div className="flex items-center gap-4">
+                <p className="text-xl text-gray-400">Ready to dominate the battlefield?</p>
+                {user?.primary_game && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-crackzone-yellow/20 rounded-full border border-crackzone-yellow/30">
+                    {user.primary_game === 'freefire' ? (
+                      <Flame className="w-4 h-4 text-crackzone-yellow" />
+                    ) : (
+                      <Target className="w-4 h-4 text-crackzone-yellow" />
+                    )}
+                    <span className="text-sm font-medium text-crackzone-yellow">
+                      {user.primary_game === 'freefire' ? 'FreeFire' : 'PUBG Mobile'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate('/tournaments')}
+                className="bg-crackzone-yellow text-crackzone-black px-6 py-3 rounded-xl font-semibold hover:bg-yellow-400 transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-crackzone-yellow/25"
+              >
+                <Play className="w-5 h-5" />
+                Join Tournament
+              </button>
+              <button 
+                onClick={() => navigate('/wallet')}
+                className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/30 text-white px-6 py-3 rounded-xl font-semibold hover:border-crackzone-yellow/50 transition-all duration-300 flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Add Money
+              </button>
+            </div>
+          </div>
         </div>
-
-        <DashboardBanner />
 
         {loading ? (
           <div className="text-center py-12">
@@ -188,80 +232,86 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                <div className="flex items-center">
-                  <Trophy className="w-8 h-8 text-crackzone-yellow mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-400">Tournaments Won</p>
-                    <p className="text-2xl font-bold text-white">{stats.tournaments_won}</p>
+            {/* Modern Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+              <div className="bg-gradient-to-br from-crackzone-yellow/20 to-crackzone-yellow/5 backdrop-blur-sm border border-crackzone-yellow/30 rounded-2xl p-6 hover:border-crackzone-yellow/50 transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <Trophy className="w-6 h-6 text-crackzone-yellow" />
                   </div>
+                  <Zap className="w-5 h-5 text-crackzone-yellow/60" />
                 </div>
+                <p className="text-3xl font-bold text-white mb-1">{stats.tournaments_won}</p>
+                <p className="text-sm text-gray-400">Tournaments Won</p>
               </div>
 
-              <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                <div className="flex items-center">
-                  <TrendingUp className="w-8 h-8 text-crackzone-yellow mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-400">Win Rate</p>
-                    <p className="text-2xl font-bold text-white">{stats.win_rate}%</p>
+              <div className="bg-gradient-to-br from-green-500/20 to-green-500/5 backdrop-blur-sm border border-green-500/30 rounded-2xl p-6 hover:border-green-500/50 transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <TrendingUp className="w-6 h-6 text-green-400" />
                   </div>
+                  <Star className="w-5 h-5 text-green-400/60" />
                 </div>
+                <p className="text-3xl font-bold text-white mb-1">{stats.win_rate}%</p>
+                <p className="text-sm text-gray-400">Win Rate</p>
               </div>
 
-              <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                <div className="flex items-center">
-                  <Users className="w-8 h-8 text-crackzone-yellow mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-400">Teams</p>
-                    <p className="text-2xl font-bold text-white">{stats.team_count}</p>
+              <div className="bg-gradient-to-br from-blue-500/20 to-blue-500/5 backdrop-blur-sm border border-blue-500/30 rounded-2xl p-6 hover:border-blue-500/50 transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <Users className="w-6 h-6 text-blue-400" />
                   </div>
+                  <Award className="w-5 h-5 text-blue-400/60" />
                 </div>
+                <p className="text-3xl font-bold text-white mb-1">{stats.team_count}</p>
+                <p className="text-sm text-gray-400">Teams</p>
               </div>
 
-              <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                <div className="flex items-center">
-                  <Wallet className="w-8 h-8 text-crackzone-yellow mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-400">Wallet Balance</p>
-                    <p className="text-2xl font-bold text-white">₹{stats.wallet_balance.toLocaleString()}</p>
+              <div className="bg-gradient-to-br from-purple-500/20 to-purple-500/5 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <Wallet className="w-6 h-6 text-purple-400" />
                   </div>
+                  <Plus className="w-5 h-5 text-purple-400/60" />
                 </div>
+                <p className="text-3xl font-bold text-white mb-1">₹{stats.wallet_balance.toLocaleString()}</p>
+                <p className="text-sm text-gray-400">Wallet Balance</p>
               </div>
             </div>
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Recent Tournaments */}
-              <div className="lg:col-span-2 space-y-6">
+              {/* Left Column - Main Content */}
+              <div className="lg:col-span-2 space-y-8">
                 {/* My Active Registrations */}
                 {myRegistrations.length > 0 && (
-                  <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-green-500/20 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-green-400" />
-                        My Upcoming Matches
-                      </h3>
+                  <div className="bg-gradient-to-br from-crackzone-gray/60 to-crackzone-gray/30 backdrop-blur-sm border border-green-500/30 rounded-2xl p-6 hover:border-green-500/50 transition-all duration-300">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
+                          <Clock className="w-5 h-5 text-green-400" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white">My Upcoming Matches</h3>
+                      </div>
                       <button 
                         onClick={() => navigate('/my-matches')}
-                        className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors flex items-center gap-1"
+                        className="text-sm text-green-400 hover:text-green-300 transition-colors flex items-center gap-1 font-medium"
                       >
-                        View All <ArrowRight className="w-4 h-4" />
+                        View All <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="space-y-3">
-                      {myRegistrations.slice(0, 3).map((registration, index) => {
+                    <div className="space-y-4">
+                      {filterByUserGame(myRegistrations).slice(0, 3).map((registration, index) => {
                         const GameIcon = getGameIcon(registration.game)
                         return (
-                          <div key={index} className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-lg flex items-center justify-center">
-                                <GameIcon className="w-5 h-5 text-crackzone-yellow" />
+                          <div key={index} className="flex items-center justify-between p-5 bg-gradient-to-r from-green-500/10 to-transparent border border-green-500/20 rounded-xl hover:border-green-500/40 transition-all duration-300">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center">
+                                <GameIcon className="w-6 h-6 text-crackzone-yellow" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-white">{registration.title}</h4>
-                                <p className="text-sm text-gray-400">
+                                <h4 className="font-semibold text-white text-lg">{registration.title}</h4>
+                                <p className="text-gray-400">
                                   {registration.participant_name} • {formatDate(registration.start_date)}
                                 </p>
                               </div>
@@ -269,11 +319,11 @@ const Dashboard = () => {
                             <div className="text-right">
                               {registration.room_id ? (
                                 <div className="flex items-center gap-2 text-green-400">
-                                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                  <span className="text-sm font-medium">Room Ready</span>
+                                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                                  <span className="font-medium">Room Ready</span>
                                 </div>
                               ) : (
-                                <span className="text-sm text-yellow-400">Waiting for room</span>
+                                <span className="text-yellow-400 font-medium">Waiting for room</span>
                               )}
                             </div>
                           </div>
@@ -283,39 +333,106 @@ const Dashboard = () => {
                   </div>
                 )}
 
-                {/* Recent Tournament Results */}
-                <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-white">Recent Tournament Results</h3>
+                {/* Upcoming Tournaments */}
+                <div className="bg-gradient-to-br from-crackzone-gray/60 to-crackzone-gray/30 backdrop-blur-sm border border-crackzone-yellow/30 rounded-2xl p-6 hover:border-crackzone-yellow/50 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-crackzone-yellow" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-white">Trending Tournaments</h3>
+                    </div>
                     <button 
                       onClick={() => navigate('/tournaments')}
-                      className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors flex items-center gap-1"
+                      className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors flex items-center gap-1 font-medium"
                     >
-                      View All <ArrowRight className="w-4 h-4" />
+                      Browse All <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {filterByUserGame(upcomingTournaments).slice(0, 4).map((tournament, index) => {
+                      const GameIcon = getGameIcon(tournament.game)
+                      return (
+                        <div 
+                          key={index} 
+                          className="p-5 bg-gradient-to-br from-crackzone-black/50 to-crackzone-black/20 rounded-xl hover:from-crackzone-black/70 hover:to-crackzone-black/40 transition-all duration-300 cursor-pointer border border-transparent hover:border-crackzone-yellow/30 group"
+                          onClick={() => navigate(`/tournaments/${tournament.id}`)}
+                        >
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                              <GameIcon className="w-5 h-5 text-crackzone-yellow" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-white">{tournament.title}</h4>
+                              <p className="text-sm text-gray-400">{tournament.tournament_type}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-crackzone-yellow font-bold text-lg">
+                              ₹{Number(tournament.prize_pool).toLocaleString()}
+                            </span>
+                            <span className="text-gray-400 text-sm">
+                              {formatDate(tournament.start_date)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            {tournament.registration_open ? (
+                              <div className="flex items-center gap-2 text-green-400 text-sm font-medium">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                Registration Open
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-red-400 text-sm font-medium">
+                                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                                Registration Closed
+                              </div>
+                            )}
+                            <Eye className="w-4 h-4 text-gray-500 group-hover:text-crackzone-yellow transition-colors" />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Recent Tournament Results */}
+                <div className="bg-gradient-to-br from-crackzone-gray/60 to-crackzone-gray/30 backdrop-blur-sm border border-crackzone-yellow/30 rounded-2xl p-6 hover:border-crackzone-yellow/50 transition-all duration-300">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center">
+                        <Award className="w-5 h-5 text-crackzone-yellow" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-white">Recent Results</h3>
+                    </div>
+                    <button 
+                      onClick={() => navigate('/tournaments')}
+                      className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors flex items-center gap-1 font-medium"
+                    >
+                      View All <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
                   <div className="space-y-4">
-                    {recentTournaments.length > 0 ? (
-                      recentTournaments.map((tournament, index) => {
+                    {filterByUserGame(recentTournaments).length > 0 ? (
+                      filterByUserGame(recentTournaments).map((tournament, index) => {
                         const GameIcon = getGameIcon(tournament.game)
                         return (
-                          <div key={index} className="flex items-center justify-between p-4 bg-crackzone-black/30 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-lg flex items-center justify-center">
-                                <GameIcon className="w-5 h-5 text-crackzone-yellow" />
+                          <div key={index} className="flex items-center justify-between p-5 bg-gradient-to-r from-crackzone-black/30 to-transparent rounded-xl border border-crackzone-yellow/10 hover:border-crackzone-yellow/30 transition-all duration-300">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center">
+                                <GameIcon className="w-6 h-6 text-crackzone-yellow" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-white">{tournament.title}</h4>
-                                <p className="text-sm text-gray-400">
+                                <h4 className="font-semibold text-white text-lg">{tournament.title}</h4>
+                                <p className="text-gray-400">
                                   {tournament.participant_name} • {formatTimeAgo(tournament.start_date)}
                                 </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className={`font-medium ${getStatusColor(tournament.status)}`}>
+                              <p className={`font-bold text-lg ${getStatusColor(tournament.status)}`}>
                                 {tournament.status}
                               </p>
-                              <p className="text-sm text-gray-400">
+                              <p className="text-gray-400">
                                 Rank #{tournament.placement} • {tournament.kills} kills
                               </p>
                             </div>
@@ -323,126 +440,80 @@ const Dashboard = () => {
                         )
                       })
                     ) : (
-                      <div className="text-center py-8">
-                        <Trophy className="w-12 h-12 text-gray-600 mx-auto mb-2" />
-                        <p className="text-gray-400">No tournament results yet</p>
-                        <p className="text-sm text-gray-500">Join tournaments to see your results here</p>
+                      <div className="text-center py-12">
+                        <Trophy className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                        <p className="text-gray-400 text-lg">No tournament results yet</p>
+                        <p className="text-gray-500">Join tournaments to see your results here</p>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Upcoming Tournaments */}
-                <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-white">Upcoming Tournaments</h3>
-                    <button 
-                      onClick={() => navigate('/tournaments')}
-                      className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors flex items-center gap-1"
-                    >
-                      Browse All <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {upcomingTournaments.slice(0, 4).map((tournament, index) => {
-                      const GameIcon = getGameIcon(tournament.game)
-                      return (
-                        <div 
-                          key={index} 
-                          className="p-4 bg-crackzone-black/30 rounded-lg hover:bg-crackzone-black/50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/tournaments/${tournament.id}`)}
-                        >
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 bg-crackzone-yellow/20 rounded-lg flex items-center justify-center">
-                              <GameIcon className="w-4 h-4 text-crackzone-yellow" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium text-white text-sm">{tournament.title}</h4>
-                              <p className="text-xs text-gray-400">{tournament.tournament_type}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-crackzone-yellow font-medium">
-                              ₹{Number(tournament.prize_pool).toLocaleString()}
-                            </span>
-                            <span className="text-gray-400">
-                              {formatDate(tournament.start_date)}
-                            </span>
-                          </div>
-                          <div className="mt-2">
-                            {tournament.registration_open ? (
-                              <div className="flex items-center gap-2 text-green-400 text-xs">
-                                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-                                Registration Open
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-red-400 text-xs">
-                                <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
-                                Registration Closed
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
               </div>
 
-              {/* Sidebar */}
-              <div className="space-y-6">
+              {/* Right Sidebar */}
+              <div className="space-y-8">
                 {/* Quick Actions */}
-                <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                  <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
+                <div className="bg-gradient-to-br from-crackzone-gray/60 to-crackzone-gray/30 backdrop-blur-sm border border-crackzone-yellow/30 rounded-2xl p-6 hover:border-crackzone-yellow/50 transition-all duration-300">
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-crackzone-yellow" />
+                    Quick Actions
+                  </h3>
                   <div className="space-y-3">
                     <button 
                       onClick={() => navigate('/tournaments')}
-                      className="w-full bg-crackzone-yellow text-crackzone-black font-medium py-3 px-4 rounded-lg hover:bg-yellow-400 transition-colors"
+                      className="w-full bg-gradient-to-r from-crackzone-yellow to-yellow-400 text-crackzone-black font-semibold py-4 px-4 rounded-xl hover:from-yellow-400 hover:to-crackzone-yellow transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-crackzone-yellow/25"
                     >
+                      <Trophy className="w-5 h-5" />
                       Browse Tournaments
                     </button>
                     <button 
                       onClick={() => navigate('/my-matches')}
-                      className="w-full bg-crackzone-black/50 text-white font-medium py-3 px-4 rounded-lg border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-colors"
+                      className="w-full bg-gradient-to-r from-crackzone-gray/50 to-crackzone-black/50 text-white font-semibold py-4 px-4 rounded-xl border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-all duration-300 flex items-center justify-center gap-2"
                     >
+                      <Target className="w-5 h-5" />
                       My Matches
                     </button>
                     <button 
                       onClick={() => navigate('/teams')}
-                      className="w-full bg-crackzone-black/50 text-white font-medium py-3 px-4 rounded-lg border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-colors"
+                      className="w-full bg-gradient-to-r from-crackzone-gray/50 to-crackzone-black/50 text-white font-semibold py-4 px-4 rounded-xl border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-all duration-300 flex items-center justify-center gap-2"
                     >
+                      <Users className="w-5 h-5" />
                       Team Management
                     </button>
                     <button 
                       onClick={() => navigate('/wallet')}
-                      className="w-full bg-crackzone-black/50 text-white font-medium py-3 px-4 rounded-lg border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-colors"
+                      className="w-full bg-gradient-to-r from-crackzone-gray/50 to-crackzone-black/50 text-white font-semibold py-4 px-4 rounded-xl border border-crackzone-yellow/30 hover:border-crackzone-yellow/50 transition-all duration-300 flex items-center justify-center gap-2"
                     >
+                      <Wallet className="w-5 h-5" />
                       Wallet
                     </button>
                   </div>
                 </div>
 
                 {/* Recent Activities */}
-                <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                  <h3 className="text-xl font-bold text-white mb-4">Recent Activities</h3>
-                  <div className="space-y-3">
+                <div className="bg-gradient-to-br from-crackzone-gray/60 to-crackzone-gray/30 backdrop-blur-sm border border-crackzone-yellow/30 rounded-2xl p-6 hover:border-crackzone-yellow/50 transition-all duration-300">
+                  <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <Bell className="w-5 h-5 text-crackzone-yellow" />
+                    Recent Activities
+                  </h3>
+                  <div className="space-y-4">
                     {activities.length > 0 ? (
                       activities.slice(0, 5).map((activity, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-crackzone-black/30 rounded-lg">
-                          <div className="w-8 h-8 bg-crackzone-yellow/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Bell className="w-4 h-4 text-crackzone-yellow" />
+                        <div key={index} className="flex items-start gap-3 p-4 bg-gradient-to-r from-crackzone-black/30 to-transparent rounded-xl border border-crackzone-yellow/10 hover:border-crackzone-yellow/30 transition-all duration-300">
+                          <div className="w-10 h-10 bg-crackzone-yellow/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                            <Bell className="w-5 h-5 text-crackzone-yellow" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white">{activity.action}</p>
-                            <p className="text-xs text-gray-400 truncate">{activity.description}</p>
+                            <p className="text-white font-medium">{activity.action}</p>
+                            <p className="text-sm text-gray-400 truncate">{activity.description}</p>
                             <p className="text-xs text-gray-500 mt-1">{formatTimeAgo(activity.timestamp)}</p>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-4">
-                        <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-sm text-gray-400">No recent activities</p>
+                      <div className="text-center py-8">
+                        <Bell className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                        <p className="text-gray-400">No recent activities</p>
                       </div>
                     )}
                   </div>

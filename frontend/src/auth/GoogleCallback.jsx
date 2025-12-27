@@ -26,7 +26,7 @@ const GoogleCallback = () => {
         if (profileComplete) {
           navigate('/dashboard');
         } else {
-          navigate('/complete-profile');
+          navigate('/select-game');
         }
       } else {
         navigate('/login?error=Authentication failed');

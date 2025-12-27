@@ -5,12 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
@@ -60,7 +60,14 @@ export default function RegisterScreen({ navigation }) {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Registration Failed', result.error);
+      let errorMessage = result.error;
+      
+      // Provide more helpful error messages
+      if (result.error === 'User already exists') {
+        errorMessage = 'An account with this email or username already exists. Please try logging in instead.';
+      }
+      
+      Alert.alert('Registration Failed', errorMessage);
     }
   };
 
@@ -68,8 +75,8 @@ export default function RegisterScreen({ navigation }) {
     try {
       setGoogleLoading(true);
       
-      // Create the Google OAuth URL
-      const googleAuthUrl = 'http://192.168.18.13:5000/api/auth/google';
+      // Create the Google OAuth URL for mobile
+      const googleAuthUrl = 'http://192.168.18.13:5000/api/auth/google/mobile';
       
       // Open the Google OAuth flow
       const result = await WebBrowser.openAuthSessionAsync(
@@ -83,14 +90,30 @@ export default function RegisterScreen({ navigation }) {
         const urlParams = new URLSearchParams(url.split('?')[1]);
         const token = urlParams.get('token');
         const profileComplete = urlParams.get('profileComplete');
+        const error = urlParams.get('error');
+
+        if (error) {
+          let errorMessage = 'Authentication failed';
+          if (error === 'oauth_not_configured') {
+            errorMessage = 'Google OAuth is not configured on the server';
+          } else if (error === 'auth_failed') {
+            errorMessage = 'Google authentication failed';
+          }
+          Alert.alert('Signup Failed', errorMessage);
+          return;
+        }
 
         if (token) {
           // Set the auth token and navigate
-          await login({ token, isGoogleAuth: true });
+          const loginResult = await login({ token, isGoogleAuth: true });
           
-          if (profileComplete === 'false') {
-            // Navigate to complete profile if needed
-            navigation.navigate('CompleteProfile');
+          if (loginResult.success) {
+            if (profileComplete === 'false') {
+              // Navigate to complete profile if needed
+              navigation.navigate('CompleteProfile');
+            }
+          } else {
+            Alert.alert('Signup Failed', loginResult.error);
           }
         } else {
           Alert.alert('Signup Failed', 'Failed to authenticate with Google');
@@ -120,12 +143,6 @@ export default function RegisterScreen({ navigation }) {
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Header */}
             <View style={styles.header}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Ionicons name="arrow-back" size={24} color={Colors.text} />
-              </TouchableOpacity>
               <Text style={styles.title}>Create Account</Text>
               <Text style={styles.subtitle}>Join the gaming community</Text>
             </View>
@@ -266,9 +283,6 @@ const styles = StyleSheet.create({
   header: {
     marginTop: Layout.spacing.xl,
     marginBottom: Layout.spacing.xl,
-  },
-  backButton: {
-    marginBottom: Layout.spacing.lg,
   },
   title: {
     fontSize: 32,

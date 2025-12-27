@@ -6,6 +6,8 @@ import App from './App'
 import { Login, Signup } from './auth'
 import GoogleCallback from './auth/GoogleCallback'
 import CompleteProfile from './auth/CompleteProfile'
+import GameSelection from './auth/GameSelection'
+import SetupGameProfile from './auth/SetupGameProfile'
 import Dashboard from './app/Dashboard'
 import Tournaments from './app/Tournaments'
 import TournamentDetail from './app/TournamentDetail'
@@ -13,10 +15,14 @@ import MyMatches from './app/MyMatches'
 import Teams from './app/Teams'
 import Schedule from './app/Schedule'
 import Profile from './app/Profile'
+import PublicProfile from './app/PublicProfile'
 import Settings from './app/Settings'
 import Wallet from './app/Wallet'
+import Rewards from './app/Rewards'
 import Notifications from './app/Notifications'
+import Leaderboard from './app/Leaderboard'
 import TestManualPayment from './components/TestManualPayment'
+import TestGameFlow from './components/TestGameFlow'
 import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
 import TournamentManagement from './admin/TournamentManagement'
@@ -24,6 +30,7 @@ import UserManagement from './admin/UserManagement'
 import TeamManagement from './admin/TeamManagement'
 import ManualPaymentManagement from './admin/ManualPaymentManagement'
 import PaymentMethodSettings from './admin/PaymentMethodSettings'
+import TournamentAdminPanel from './admin/TournamentAdminPanel'
 import AdminProtectedRoute from './admin/AdminProtectedRoute'
 
 const AppRouter = () => {
@@ -38,6 +45,16 @@ const AppRouter = () => {
           <Route path="/complete-profile" element={
             <ProtectedRoute>
               <CompleteProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/select-game" element={
+            <ProtectedRoute>
+              <GameSelection />
+            </ProtectedRoute>
+          } />
+          <Route path="/setup-game-profile" element={
+            <ProtectedRoute>
+              <SetupGameProfile />
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
@@ -75,6 +92,7 @@ const AppRouter = () => {
               <Profile />
             </ProtectedRoute>
           } />
+          <Route path="/u/:username" element={<PublicProfile />} />
           <Route path="/settings" element={
             <ProtectedRoute>
               <Settings />
@@ -85,14 +103,25 @@ const AppRouter = () => {
               <Wallet />
             </ProtectedRoute>
           } />
+          <Route path="/rewards" element={
+            <ProtectedRoute>
+              <Rewards />
+            </ProtectedRoute>
+          } />
           <Route path="/notifications" element={
             <ProtectedRoute>
               <Notifications />
             </ProtectedRoute>
           } />
+          <Route path="/leaderboard" element={
+            <ProtectedRoute>
+              <Leaderboard />
+            </ProtectedRoute>
+          } />
           
-          {/* Test Route */}
+          {/* Test Routes */}
           <Route path="/test-manual-payment" element={<TestManualPayment />} />
+          <Route path="/test-game-flow" element={<TestGameFlow />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
@@ -105,6 +134,11 @@ const AppRouter = () => {
           <Route path="/admin/tournaments" element={
             <AdminProtectedRoute>
               <TournamentManagement />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/admin/tournaments/:id" element={
+            <AdminProtectedRoute>
+              <TournamentAdminPanel />
             </AdminProtectedRoute>
           } />
           <Route path="/admin/users" element={

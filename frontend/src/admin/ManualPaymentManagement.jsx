@@ -39,6 +39,8 @@ const ManualPaymentManagement = () => {
       }
       
       const response = await adminAPI.getManualPayments(params);
+      console.log('Fetched payments:', response.requests);
+      console.log('Screenshot URLs:', response.requests.map(p => ({ id: p.id, url: p.screenshotUrl })));
       setPayments(response.requests);
     } catch (error) {
       console.error('Failed to fetch payments:', error);
@@ -180,11 +182,23 @@ const ManualPaymentManagement = () => {
               <h3 className="font-semibold text-gray-900 mb-3">Payment Screenshot</h3>
               <div className="border border-gray-200 rounded-lg p-4">
                 {selectedPayment.screenshotUrl ? (
-                  <img
-                    src={selectedPayment.screenshotUrl}
-                    alt="Payment screenshot"
-                    className="w-full h-auto rounded-lg"
-                  />
+                  <div>
+                    <img
+                      src={selectedPayment.screenshotUrl}
+                      alt="Payment screenshot"
+                      className="w-full h-auto rounded-lg"
+                      onError={(e) => {
+                        console.error('Image failed to load:', selectedPayment.screenshotUrl);
+                        e.target.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('Image loaded successfully:', selectedPayment.screenshotUrl);
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-2 break-all">
+                      URL: {selectedPayment.screenshotUrl}
+                    </p>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-48 text-gray-400">
                     <ImageIcon className="w-12 h-12" />

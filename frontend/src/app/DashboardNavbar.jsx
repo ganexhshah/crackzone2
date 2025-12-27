@@ -9,26 +9,47 @@ import {
   Gamepad2, 
   Users, 
   Target,
-  Bell,
   Menu,
   X,
+  Gift,
+  Search,
   Wallet,
-  Clock,
-  Check
+  ChevronDown,
+  Award
 } from 'lucide-react'
 import CrackZoneLogo from '../components/CrackZoneLogo'
+import NotificationsDropdown from '../components/NotificationsDropdown'
+import SearchModal from '../components/SearchModal'
+import { useAuth } from '../contexts/AuthContext'
+import { walletAPI } from '../services/api'
 
 const DashboardNavbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [walletBalance, setWalletBalance] = useState(0)
   const location = useLocation()
-  const notificationRef = useRef(null)
+  const { user, logout } = useAuth()
+  const profileRef = useRef(null)
 
-  // Close notification dropdown when clicking outside
+  const navItems = [
+    { name: 'Dashboard', icon: Gamepad2, path: '/dashboard' },
+    { name: 'Tournaments', icon: Trophy, path: '/tournaments' },
+    { name: 'My Matches', icon: Target, path: '/my-matches' },
+    { name: 'Teams', icon: Users, path: '/teams' },
+    { name: 'Leaderboard', icon: Award, path: '/leaderboard' },
+    { name: 'Schedule', icon: Calendar, path: '/schedule' },
+    { name: 'Rewards', icon: Gift, path: '/rewards' }
+  ]
+
+  useEffect(() => {
+    fetchWalletBalance()
+  }, [])
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setIsNotificationOpen(false)
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false)
       }
     }
 
@@ -38,46 +59,19 @@ const DashboardNavbar = () => {
     }
   }, [])
 
-  const navItems = [
-    { name: 'Dashboard', icon: Gamepad2, path: '/dashboard' },
-    { name: 'Tournaments', icon: Trophy, path: '/tournaments' },
-    { name: 'My Matches', icon: Target, path: '/my-matches' },
-    { name: 'Teams', icon: Users, path: '/teams' },
-    { name: 'Schedule', icon: Calendar, path: '/schedule' },
-    { name: 'Profile', icon: User, path: '/profile' }
-  ]
-
-  const recentNotifications = [
-    {
-      id: 1,
-      title: 'Tournament Starting Soon',
-      message: 'FreeFire Championship starts in 30 minutes',
-      time: '5m ago',
-      read: false,
-      icon: Trophy,
-      color: 'text-crackzone-yellow'
-    },
-    {
-      id: 2,
-      title: 'Team Invitation',
-      message: 'Elite Gamers invited you to join',
-      time: '1h ago',
-      read: false,
-      icon: Users,
-      color: 'text-blue-400'
-    },
-    {
-      id: 3,
-      title: 'Prize Money Received',
-      message: 'You received ₹5,000 prize money',
-      time: '2h ago',
-      read: true,
-      icon: Wallet,
-      color: 'text-green-400'
+  const fetchWalletBalance = async () => {
+    try {
+      const response = await walletAPI.getWallet()
+      setWalletBalance(response.data.balance || 0)
+    } catch (error) {
+      console.error('Failed to fetch wallet balance:', error)
     }
-  ]
+  }
 
-  const unreadCount = recentNotifications.filter(n => !n.read).length
+  const handleLogout = () => {
+    logout()
+    setIsProfileOpen(false)
+  }
 
   return (
     <header className="bg-crackzone-gray/50 backdrop-blur-sm border-b border-crackzone-yellow/20 sticky top-0 z-50">
@@ -91,122 +85,147 @@ const DashboardNavbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path
               return (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-crackzone-yellow/20 text-crackzone-yellow'
-                      : 'text-gray-300 hover:text-crackzone-yellow hover:bg-crackzone-yellow/10'
-                  }`}
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.name}
-                </Link>
+                <div key={item.name} className="relative group">
+                  <Link
+                    to={item.path}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-crackzone-yellow/20 text-crackzone-yellow'
+                        : 'text-gray-300 hover:text-crackzone-yellow hover:bg-crackzone-yellow/10'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                  </Link>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-crackzone-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                    {item.name}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-crackzone-black/90"></div>
+                  </div>
+                </div>
               )
             })}
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <div className="relative" ref={notificationRef}>
+          <div className="flex items-center space-x-2">
+            {/* Search Icon */}
+            <div className="relative group">
               <button 
-                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                className="relative p-2 text-gray-400 hover:text-crackzone-yellow transition-colors"
+                onClick={() => setIsSearchOpen(true)}
+                className="p-2 text-gray-400 hover:text-crackzone-yellow transition-colors rounded-lg hover:bg-crackzone-yellow/10"
               >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
+                <Search className="w-5 h-5" />
               </button>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-crackzone-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Search
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-crackzone-black/90"></div>
+              </div>
+            </div>
 
-              {/* Notification Dropdown */}
-              {isNotificationOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-crackzone-gray/95 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl shadow-xl z-50">
-                  <div className="p-4 border-b border-crackzone-yellow/20">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-bold text-white">Notifications</h3>
-                      <Link 
-                        to="/notifications"
-                        onClick={() => setIsNotificationOpen(false)}
-                        className="text-sm text-crackzone-yellow hover:text-yellow-400 transition-colors"
-                      >
-                        View All
-                      </Link>
-                    </div>
-                  </div>
-                  
-                  <div className="max-h-96 overflow-y-auto">
-                    {recentNotifications.length > 0 ? (
-                      <div className="p-2">
-                        {recentNotifications.map((notification) => (
-                          <div 
-                            key={notification.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg hover:bg-crackzone-yellow/10 transition-colors cursor-pointer ${
-                              !notification.read ? 'bg-crackzone-yellow/5' : ''
-                            }`}
-                          >
-                            <div className={`w-8 h-8 rounded-lg bg-crackzone-black/30 flex items-center justify-center`}>
-                              <notification.icon className={`w-4 h-4 ${notification.color}`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className={`text-sm font-medium ${notification.read ? 'text-gray-300' : 'text-white'}`}>
-                                  {notification.title}
-                                </p>
-                                {!notification.read && (
-                                  <div className="w-2 h-2 bg-crackzone-yellow rounded-full"></div>
-                                )}
-                              </div>
-                              <p className="text-xs text-gray-400 mb-1">{notification.message}</p>
-                              <p className="text-xs text-gray-500">{notification.time}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+            {/* Notifications */}
+            <div className="relative group">
+              <NotificationsDropdown />
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-crackzone-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                Notifications
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-crackzone-black/90"></div>
+              </div>
+            </div>
+
+            {/* Profile Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <div className="relative group">
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center gap-2 p-2 text-gray-400 hover:text-crackzone-yellow transition-colors"
+                >
+                  <div className="w-8 h-8 bg-crackzone-yellow/20 rounded-full flex items-center justify-center">
+                    {user?.profile_picture_url ? (
+                      <img 
+                        src={user.profile_picture_url} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
                     ) : (
-                      <div className="p-6 text-center">
-                        <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                        <p className="text-gray-400 text-sm">No new notifications</p>
-                      </div>
+                      <User className="w-4 h-4 text-crackzone-yellow" />
                     )}
                   </div>
-                  
-                  {recentNotifications.length > 0 && (
-                    <div className="p-3 border-t border-crackzone-yellow/20">
-                      <Link
-                        to="/notifications"
-                        onClick={() => setIsNotificationOpen(false)}
-                        className="w-full bg-crackzone-yellow/20 text-crackzone-yellow py-2 rounded-lg font-medium hover:bg-crackzone-yellow/30 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <Bell className="w-4 h-4" />
-                        View All Notifications
-                      </Link>
+                  <span className="hidden lg:block text-sm font-medium text-white">
+                    {user?.username || 'User'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 hidden lg:block" />
+                </button>
+                {/* Tooltip for medium screens */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-crackzone-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 lg:hidden">
+                  {user?.username || 'Profile'}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-crackzone-black/90"></div>
+                </div>
+              </div>
+
+              {/* Profile Dropdown Menu */}
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-crackzone-gray/95 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl shadow-xl z-50">
+                  <div className="p-4 border-b border-crackzone-yellow/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-crackzone-yellow/20 rounded-full flex items-center justify-center">
+                        <User className="w-6 h-6 text-crackzone-yellow" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{user?.username || 'User'}</p>
+                        <p className="text-sm text-gray-400">{user?.email}</p>
+                      </div>
                     </div>
-                  )}
+                    <div className="mt-3 p-3 bg-crackzone-black/30 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Wallet Balance</span>
+                        <div className="flex items-center gap-1">
+                          <Wallet className="w-4 h-4 text-crackzone-yellow" />
+                          <span className="font-medium text-crackzone-yellow">₹{walletBalance.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 w-full p-3 text-left text-gray-300 hover:text-crackzone-yellow hover:bg-crackzone-yellow/10 rounded-lg transition-colors"
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                    <Link
+                      to="/wallet"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 w-full p-3 text-left text-gray-300 hover:text-crackzone-yellow hover:bg-crackzone-yellow/10 rounded-lg transition-colors"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      Wallet
+                    </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-3 w-full p-3 text-left text-gray-300 hover:text-crackzone-yellow hover:bg-crackzone-yellow/10 rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Settings
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 w-full p-3 text-left text-gray-300 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Settings */}
-            <button className="p-2 text-gray-400 hover:text-crackzone-yellow transition-colors">
-              <Settings className="w-5 h-5" />
-            </button>
-
-            {/* Logout */}
-            <Link 
-              to="/login"
-              className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-            </Link>
 
             {/* Mobile Menu Button */}
             <button
@@ -244,6 +263,12 @@ const DashboardNavbar = () => {
           </div>
         )}
       </div>
+
+      {/* Search Modal */}
+      <SearchModal 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+      />
     </header>
   )
 }

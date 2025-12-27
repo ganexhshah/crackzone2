@@ -62,7 +62,8 @@ const Notifications = () => {
         icon: getNotificationIcon(n.type),
         color: getNotificationColor(n.type),
         bgColor: getNotificationBgColor(n.type),
-        actionButtons: n.type === 'team_invitation' && !n.data?.status
+        actionButtons: (n.type === 'team_invitation' && !n.data?.status) || 
+                      (n.type === 'tournament_started' && n.action_type === 'join_match' && !n.action_taken)
       })))
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
@@ -83,7 +84,8 @@ const Notifications = () => {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'tournament': return Trophy
+      case 'tournament':
+      case 'tournament_started': return Trophy
       case 'team':
       case 'team_invitation': return Users
       case 'wallet': return Wallet
@@ -95,7 +97,8 @@ const Notifications = () => {
 
   const getNotificationColor = (type) => {
     switch (type) {
-      case 'tournament': return 'text-crackzone-yellow'
+      case 'tournament':
+      case 'tournament_started': return 'text-crackzone-yellow'
       case 'team':
       case 'team_invitation': return 'text-blue-400'
       case 'wallet': return 'text-green-400'
@@ -107,7 +110,8 @@ const Notifications = () => {
 
   const getNotificationBgColor = (type) => {
     switch (type) {
-      case 'tournament': return 'bg-crackzone-yellow/10'
+      case 'tournament':
+      case 'tournament_started': return 'bg-crackzone-yellow/10'
       case 'team':
       case 'team_invitation': return 'bg-blue-500/10'
       case 'wallet': return 'bg-green-500/10'
@@ -262,29 +266,52 @@ const Notifications = () => {
           
           {notification.actionButtons && (
             <div className="flex gap-2">
-              <button 
-                onClick={() => handleNotificationAction(notification.id, 'accept')}
-                className="bg-crackzone-yellow text-crackzone-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-400 transition-colors"
-              >
-                Accept
-              </button>
-              <button 
-                onClick={() => handleNotificationAction(notification.id, 'decline')}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-              >
-                Decline
-              </button>
+              {notification.type === 'team_invitation' ? (
+                <>
+                  <button 
+                    onClick={() => handleNotificationAction(notification.id, 'accept')}
+                    className="bg-crackzone-yellow text-crackzone-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-400 transition-colors"
+                  >
+                    Accept
+                  </button>
+                  <button 
+                    onClick={() => handleNotificationAction(notification.id, 'decline')}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
+                  >
+                    Decline
+                  </button>
+                </>
+              ) : notification.type === 'tournament_started' && notification.action_type === 'join_match' ? (
+                <>
+                  <button 
+                    onClick={() => {
+                      const actionData = JSON.parse(notification.action_data || '{}');
+                      navigate(`/tournaments/${actionData.tournamentId}`);
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    View Tournament
+                  </button>
+                  <button 
+                    onClick={() => handleNotificationAction(notification.id, 'mark_joined')}
+                    className="bg-crackzone-yellow text-crackzone-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-400 transition-colors"
+                  >
+                    I am Joined
+                  </button>
+                </>
+              ) : null}
             </div>
           )}
           
-          {notification.data?.status && (
+          {(notification.data?.status || notification.action_taken) && (
             <div className="mt-2">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                notification.data.status === 'accepted' 
+                (notification.data?.status === 'accepted' || notification.action_taken === 'joined')
                   ? 'bg-green-500/20 text-green-400' 
                   : 'bg-red-500/20 text-red-400'
               }`}>
-                {notification.data.status === 'accepted' ? 'Accepted' : 'Declined'}
+                {notification.action_taken === 'joined' ? 'Joined' : 
+                 notification.data?.status === 'accepted' ? 'Accepted' : 'Declined'}
               </span>
             </div>
           )}

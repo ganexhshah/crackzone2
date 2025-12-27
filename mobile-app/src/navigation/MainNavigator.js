@@ -8,19 +8,27 @@ import { useResponsive } from '../hooks/useResponsive';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import TournamentsScreen from '../screens/main/TournamentsScreen';
 import TournamentDetailScreen from '../screens/main/TournamentDetailScreen';
-import TeamsScreen from '../screens/main/TeamsScreen';
 import WalletScreen from '../screens/main/WalletScreen';
-import TransactionHistoryScreen from '../screens/main/TransactionHistoryScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-import EditProfileScreen from '../screens/main/EditProfileScreen';
-import GameProfilesScreen from '../screens/main/GameProfilesScreen';
-import AchievementsScreen from '../screens/main/AchievementsScreen';
-import StatisticsScreen from '../screens/main/StatisticsScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
-import NotificationSettingsScreen from '../screens/main/NotificationSettingsScreen';
-import PrivacySecurityScreen from '../screens/main/PrivacySecurityScreen';
-import HelpSupportScreen from '../screens/main/HelpSupportScreen';
-import AboutScreen from '../screens/main/AboutScreen';
+import LeaderboardScreen from '../screens/main/LeaderboardScreen';
+
+// Teams screens
+import TeamsScreen from '../screens/teams/TeamsScreen';
+import CreateTeamScreen from '../screens/teams/CreateTeamScreen';
+import TeamManagementScreen from '../screens/teams/TeamManagementScreen';
+
+// Profile screens
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
+import GameProfilesScreen from '../screens/profile/GameProfilesScreen';
+import AchievementsScreen from '../screens/profile/AchievementsScreen';
+import StatisticsScreen from '../screens/profile/StatisticsScreen';
+import TransactionHistoryScreen from '../screens/profile/TransactionHistoryScreen';
+import TransactionDetailScreen from '../screens/profile/TransactionDetailScreen';
+import NotificationSettingsScreen from '../screens/profile/NotificationSettingsScreen';
+import PrivacySecurityScreen from '../screens/profile/PrivacySecurityScreen';
+import HelpSupportScreen from '../screens/profile/HelpSupportScreen';
+import AboutScreen from '../screens/profile/AboutScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -65,6 +73,7 @@ function DashboardStack() {
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="DashboardMain" component={DashboardScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
     </Stack.Navigator>
   );
 }
@@ -82,6 +91,8 @@ function TeamsStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="TeamsList" component={TeamsScreen} />
+      <Stack.Screen name="CreateTeam" component={CreateTeamScreen} />
+      <Stack.Screen name="TeamManagement" component={TeamManagementScreen} />
     </Stack.Navigator>
   );
 }
@@ -91,6 +102,7 @@ function WalletStack() {
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="WalletMain" component={WalletScreen} />
       <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+      <Stack.Screen name="TransactionDetail" component={TransactionDetailScreen} />
     </Stack.Navigator>
   );
 }

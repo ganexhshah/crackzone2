@@ -1,31 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { useResponsive } from '../../hooks/useResponsive';
 import { Colors } from '../../constants/Colors';
 import { Layout } from '../../constants/Layout';
+import { useResponsive } from '../../hooks/useResponsive';
+import ResponsiveHeader from '../../components/ResponsiveHeader';
 import ProfileSkeleton from '../../components/skeletons/ProfileSkeleton';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout } = useAuth();
-  const { 
-    getResponsiveValue, 
-    getFontSize, 
-    getSpacing, 
-    getContainerPadding,
-    isExtraSmallDevice,
-    isSmallDevice 
-  } = useResponsive();
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { getSpacing, getFontSize } = useResponsive();
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Simulate refresh
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -38,14 +42,13 @@ export default function ProfileScreen({ navigation }) {
     );
   };
 
-  const ProfileItem = ({ icon, title, subtitle, onPress, showArrow = true }) => (
+  const ProfileItem = ({ icon, title, subtitle, onPress, iconColor = Colors.crackzoneYellow }) => (
     <TouchableOpacity 
       style={[
         styles.profileItem,
-        { 
+        {
           padding: getSpacing(Layout.spacing.md),
           marginBottom: getSpacing(Layout.spacing.sm),
-          minHeight: Layout.minTouchTarget,
         }
       ]} 
       onPress={onPress}
@@ -54,16 +57,16 @@ export default function ProfileScreen({ navigation }) {
         <View style={[
           styles.profileItemIcon,
           {
-            width: getResponsiveValue(36, 40, 44, 48, 52, 56, 60),
-            height: getResponsiveValue(36, 40, 44, 48, 52, 56, 60),
-            borderRadius: getResponsiveValue(18, 20, 22, 24, 26, 28, 30),
+            width: getSpacing(40),
+            height: getSpacing(40),
+            borderRadius: getSpacing(20),
             marginRight: getSpacing(Layout.spacing.md),
           }
         ]}>
           <Ionicons 
             name={icon} 
-            size={getResponsiveValue(16, 18, 20, 22, 24, 26, 28)} 
-            color={Colors.crackzoneYellow} 
+            size={getFontSize(20)} 
+            color={iconColor} 
           />
         </View>
         <View style={styles.profileItemText}>
@@ -86,85 +89,107 @@ export default function ProfileScreen({ navigation }) {
           )}
         </View>
       </View>
-      {showArrow && (
-        <Ionicons 
-          name="chevron-forward" 
-          size={getResponsiveValue(16, 18, 20, 22, 24, 26, 28)} 
-          color={Colors.textMuted} 
-        />
-      )}
+      <Ionicons 
+        name="chevron-forward" 
+        size={getFontSize(20)} 
+        color={Colors.textMuted} 
+      />
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return <ProfileSkeleton />;
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <LinearGradient
         colors={[Colors.crackzoneBlack, Colors.crackzoneGray]}
         style={styles.gradient}
       >
-        <ScrollView style={styles.scrollView}>
-          {/* Header */}
-          <View style={[
-            styles.header,
-            {
-              paddingHorizontal: getContainerPadding(),
-              paddingTop: getSpacing(Layout.spacing.lg),
-              paddingBottom: getSpacing(Layout.spacing.md),
-            }
-          ]}>
-            <Text style={[
-              styles.headerTitle,
-              { fontSize: getFontSize(isExtraSmallDevice ? 24 : isSmallDevice ? 26 : 28) }
-            ]}>
-              Profile
-            </Text>
-          </View>
+        {/* Responsive Header */}
+        <ResponsiveHeader
+          title="Profile"
+          showBackButton={false}
+          showBorder={false}
+        />
 
-          {/* User Info */}
+        {/* Subtitle */}
+        <View style={[
+          styles.subtitleContainer,
+          {
+            paddingHorizontal: getSpacing(Layout.spacing.lg),
+            paddingBottom: getSpacing(Layout.spacing.lg),
+          }
+        ]}>
+          <Text style={[
+            styles.headerSubtitle,
+            { fontSize: getFontSize(16) }
+          ]}>
+            Manage your account and settings
+          </Text>
+        </View>
+
+        <ScrollView 
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.crackzoneYellow}
+            />
+          }
+        >
+          {/* User Info Card */}
           <View style={[
-            styles.userSection,
+            styles.userCard,
             {
-              paddingHorizontal: getContainerPadding(),
-              paddingVertical: getSpacing(Layout.spacing.xl),
+              marginHorizontal: getSpacing(Layout.spacing.lg),
+              padding: getSpacing(Layout.spacing.lg),
+              marginBottom: getSpacing(Layout.spacing.lg),
             }
           ]}>
-            <View style={[
-              styles.avatar,
-              {
-                width: getResponsiveValue(70, 75, 80, 85, 90, 95, 100),
-                height: getResponsiveValue(70, 75, 80, 85, 90, 95, 100),
-                borderRadius: getResponsiveValue(35, 37.5, 40, 42.5, 45, 47.5, 50),
-                marginBottom: getSpacing(Layout.spacing.md),
-              }
-            ]}>
-              <Ionicons 
-                name="person" 
-                size={getResponsiveValue(32, 36, 40, 44, 48, 52, 56)} 
-                color={Colors.crackzoneYellow} 
-              />
+            <View style={styles.userInfo}>
+              <View style={[
+                styles.avatar,
+                {
+                  width: getSpacing(60),
+                  height: getSpacing(60),
+                  borderRadius: getSpacing(30),
+                  marginBottom: getSpacing(Layout.spacing.md),
+                }
+              ]}>
+                <Ionicons 
+                  name="person" 
+                  size={getFontSize(30)} 
+                  color={Colors.crackzoneYellow} 
+                />
+              </View>
+              
+              <Text style={[
+                styles.username,
+                { 
+                  fontSize: getFontSize(20),
+                  marginBottom: getSpacing(Layout.spacing.xs),
+                }
+              ]}>
+                {user?.username || 'Gamer'}
+              </Text>
+              
+              <Text style={[
+                styles.email,
+                { fontSize: getFontSize(14) }
+              ]}>
+                {user?.email || 'gamer@example.com'}
+              </Text>
             </View>
-            <Text style={[
-              styles.username,
-              { 
-                fontSize: getFontSize(isExtraSmallDevice ? 20 : isSmallDevice ? 22 : 24),
-                marginBottom: getSpacing(Layout.spacing.xs),
-              }
-            ]}>
-              {user?.username || 'Gamer'}
-            </Text>
-            <Text style={[
-              styles.email,
-              { fontSize: getFontSize(16) }
-            ]}>
-              {user?.email || 'gamer@example.com'}
-            </Text>
           </View>
 
           {/* Profile Options */}
           <View style={[
             styles.optionsSection,
             {
-              paddingHorizontal: getContainerPadding(),
+              paddingHorizontal: getSpacing(Layout.spacing.lg),
               marginBottom: getSpacing(Layout.spacing.lg),
             }
           ]}>
@@ -189,8 +214,14 @@ export default function ProfileScreen({ navigation }) {
             <ProfileItem
               icon="stats-chart-outline"
               title="Statistics"
-              subtitle="View your gaming statistics"
+              subtitle="View detailed gaming statistics"
               onPress={() => navigation.navigate('Statistics')}
+            />
+            <ProfileItem
+              icon="card-outline"
+              title="Transaction History"
+              subtitle="View your payment history"
+              onPress={() => navigation.navigate('TransactionHistory')}
             />
             <ProfileItem
               icon="notifications-outline"
@@ -222,7 +253,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={[
             styles.logoutSection,
             {
-              paddingHorizontal: getContainerPadding(),
+              paddingHorizontal: getSpacing(Layout.spacing.lg),
               paddingBottom: getSpacing(Layout.spacing.xl),
             }
           ]}>
@@ -231,14 +262,13 @@ export default function ProfileScreen({ navigation }) {
                 styles.logoutButton,
                 {
                   padding: getSpacing(Layout.spacing.md),
-                  minHeight: Layout.minTouchTarget,
                 }
               ]} 
               onPress={handleLogout}
             >
               <Ionicons 
                 name="log-out-outline" 
-                size={getResponsiveValue(18, 20, 22, 24, 26, 28, 30)} 
+                size={getFontSize(20)} 
                 color={Colors.error} 
               />
               <Text style={[
@@ -254,7 +284,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -269,16 +299,21 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  header: {
+  subtitleContainer: {
     // Dynamic padding applied via responsive hook
   },
-  headerTitle: {
-    fontWeight: 'bold',
-    color: Colors.text,
+  headerSubtitle: {
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
-  userSection: {
+  userCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Layout.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  userInfo: {
     alignItems: 'center',
-    // Dynamic padding applied via responsive hook
   },
   avatar: {
     backgroundColor: Colors.surface,

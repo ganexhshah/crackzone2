@@ -3,6 +3,8 @@ import { Upload, Save, Eye, EyeOff, Loader, Check, X } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { adminAPI } from '../services/adminAPI';
 
+const API_BASE_URL = 'http://localhost:5000/api';
+
 const PaymentMethodSettings = () => {
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ const PaymentMethodSettings = () => {
     }
   };
 
-  const handleQrUpload = (e, methodId) => {
+  const handleQrUpload = async (e, methodId) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { // 2MB limit
@@ -39,17 +41,55 @@ const PaymentMethodSettings = () => {
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
+      try {
+        setSaving(true);
+        
+        // Upload to Cloudinary
+        const formData = new FormData();
+        formData.append('qrCode', file);
+
+        const response = await fetch(`${API_BASE_URL}/uploads/qr-code`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Upload failed');
+        }
+
+        const data = await response.json();
+        
+        // Find the method to update
+        const methodToUpdate = methods.find(method => method.id === methodId);
+        if (!methodToUpdate) {
+          throw new Error('Payment method not found');
+        }
+
+        // Update the database with the new QR code URL
+        await adminAPI.updateManualPaymentMethod(methodId, {
+          displayName: methodToUpdate.displayName,
+          qrCodeUrl: data.url,
+          accountDetails: methodToUpdate.accountDetails,
+          isActive: methodToUpdate.isActive
+        });
+        
+        // Update the local state
         setMethods(methods.map(method => 
           method.id === methodId 
-            ? { ...method, qrCodeUrl: base64 }
+            ? { ...method, qrCodeUrl: data.url }
             : method
         ));
-        setQrPreview(base64);
-      };
-      reader.readAsDataURL(file);
+        
+        alert('QR code uploaded and saved successfully!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        alert('Failed to upload QR code: ' + error.message);
+      } finally {
+        setSaving(false);
+      }
     }
   };
 

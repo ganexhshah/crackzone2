@@ -12,12 +12,17 @@ async function migrateNotifications() {
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL CHECK (type IN ('tournament', 'team', 'team_invitation', 'wallet', 'system', 'match', 'achievement')),
+        type VARCHAR(50) NOT NULL CHECK (type IN ('tournament', 'tournament_started', 'team', 'team_invitation', 'wallet', 'system', 'match', 'achievement')),
         title VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
         data JSONB DEFAULT '{}',
         read BOOLEAN DEFAULT false,
         read_at TIMESTAMP,
+        tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
+        action_type VARCHAR(50),
+        action_data JSONB DEFAULT '{}',
+        action_taken VARCHAR(50),
+        action_taken_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )

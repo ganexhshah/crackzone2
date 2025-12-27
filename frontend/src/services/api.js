@@ -10,8 +10,25 @@ const api = axios.create({
   },
 });
 
+// Create a separate instance for public endpoints that don't require auth
+const publicApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Add auth token to requests if available
 api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Add auth token to public API requests if available (optional)
+publicApi.interceptors.request.use((config) => {
   const token = localStorage.getItem('authToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -38,6 +55,14 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   getCurrentUser: () => api.get('/auth/me'),
   completeProfile: (profileData) => api.post('/auth/complete-profile', profileData),
+  updateGamePreference: (gameData) => api.post('/auth/update-game-preference', gameData),
+  completeGameProfile: (formData) => api.post('/auth/complete-game-profile', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  googleAuth: () => `${API_BASE_URL}/auth/google`,
+  googleAuthMobile: () => `${API_BASE_URL}/auth/google/mobile`,
 };
 
 // Users API
@@ -57,6 +82,16 @@ export const tournamentsAPI = {
   getLeaderboard: (id) => api.get(`/tournaments/${id}/leaderboard`),
   updateRoomDetails: (id, data) => api.put(`/tournaments/${id}/room-details`, data),
   submitResults: (id, data) => api.post(`/tournaments/${id}/results`, data),
+  updateReadyStatus: (id, ready) => api.post(`/tournaments/${id}/ready-status`, { ready }),
+  submitReport: (id, data) => api.post(`/tournaments/${id}/report`, data),
+};
+
+// Leaderboard API
+export const leaderboardAPI = {
+  getGlobalLeaderboard: (params = {}) => api.get('/leaderboard', { params }),
+  getLeaderboardStats: (params = {}) => api.get('/leaderboard/stats', { params }),
+  getMyPosition: (params = {}) => api.get('/leaderboard/my-position', { params }),
+  getAroundMe: (params = {}) => api.get('/leaderboard/around-me', { params }),
 };
 
 // Teams API
@@ -102,6 +137,11 @@ export const profileAPI = {
   getAchievements: () => api.get('/profile/achievements'),
   getMatches: (params) => api.get('/profile/matches', { params }),
   updateSettings: (data) => api.put('/profile/settings', data),
+  // Public profile methods
+  getPublicProfile: (username) => publicApi.get(`/profile/public/${username}`),
+  followUser: (username) => api.post(`/profile/follow/${username}`),
+  unfollowUser: (username) => api.delete(`/profile/follow/${username}`),
+  searchUsers: (query) => publicApi.get(`/profile/search?q=${encodeURIComponent(query)}`),
 };
 
 // Notifications API
@@ -124,6 +164,17 @@ export const dashboardAPI = {
   getUpcomingTournaments: () => api.get('/dashboard/upcoming-tournaments'),
   getMyRegistrations: () => api.get('/dashboard/my-registrations'),
   getActivities: () => api.get('/dashboard/activities'),
+};
+
+// Rewards API
+export const rewardsAPI = {
+  getSummary: () => api.get('/rewards/summary'),
+  getDailyRewards: () => api.get('/rewards/daily'),
+  claimDailyReward: () => api.post('/rewards/daily/claim'),
+  getAchievements: () => api.get('/rewards/achievements'),
+  getChallenges: () => api.get('/rewards/challenges'),
+  getRedeemableRewards: () => api.get('/rewards/redeem'),
+  redeemReward: (id) => api.post(`/rewards/redeem/${id}`),
 };
 
 // Health check

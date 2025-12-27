@@ -148,9 +148,13 @@ export default function ManualPaymentFlow({ visible, onClose, onSuccess }) {
 
     setUploading(true);
     try {
-      // In a real app, you would upload to your server or cloud storage
-      // For now, we'll simulate the upload and use a placeholder URL
-      const screenshotUrl = `screenshot_${Date.now()}.jpg`;
+      console.log('Uploading screenshot:', screenshot.uri);
+      
+      // First upload the screenshot to get the URL
+      const uploadResponse = await walletAPI.uploadPaymentScreenshot(screenshot.uri);
+      console.log('Upload successful:', uploadResponse.data);
+      
+      const screenshotUrl = uploadResponse.data.url;
       
       const payload = {
         paymentMethodId: selectedPaymentMethod.id,
@@ -159,10 +163,14 @@ export default function ManualPaymentFlow({ visible, onClose, onSuccess }) {
         transactionReference: transactionReference || `TXN${Date.now()}`
       };
 
+      console.log('Submitting payment with payload:', payload);
       await walletAPI.submitManualPayment(payload);
+      console.log('Payment submitted successfully');
+      
       setCurrentStep(PAYMENT_STEPS.CONFIRMATION);
     } catch (error) {
       console.error('Error submitting payment:', error);
+      console.error('Error response:', error.response?.data);
       Alert.alert('Error', error.response?.data?.error || 'Failed to submit payment');
     } finally {
       setUploading(false);
@@ -348,7 +356,22 @@ export default function ManualPaymentFlow({ visible, onClose, onSuccess }) {
       {selectedPaymentMethod?.accountDetails && (
         <View style={styles.accountDetailsContainer}>
           <Text style={styles.accountDetailsTitle}>Account Details:</Text>
-          <Text style={styles.accountDetailsText}>{selectedPaymentMethod.accountDetails}</Text>
+          {typeof selectedPaymentMethod.accountDetails === 'object' ? (
+            <View>
+              {selectedPaymentMethod.accountDetails.account_name && (
+                <Text style={styles.accountDetailsText}>
+                  Account Name: {selectedPaymentMethod.accountDetails.account_name}
+                </Text>
+              )}
+              {selectedPaymentMethod.accountDetails.account_number && (
+                <Text style={styles.accountDetailsText}>
+                  Account Number: {selectedPaymentMethod.accountDetails.account_number}
+                </Text>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.accountDetailsText}>{selectedPaymentMethod.accountDetails}</Text>
+          )}
         </View>
       )}
 

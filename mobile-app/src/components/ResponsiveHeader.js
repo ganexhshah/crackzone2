@@ -36,7 +36,7 @@ export default function ResponsiveHeader({
       {
         backgroundColor,
         borderBottomWidth: showBorder ? 1 : 0,
-        paddingTop: isAndroid ? statusBarHeight : insets.top,
+        paddingTop: isAndroid ? statusBarHeight : 44, // Use fixed 44pt for iOS status bar
       }
     ]}>
       {/* Status Bar for both platforms */}

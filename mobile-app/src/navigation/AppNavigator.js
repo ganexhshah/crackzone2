@@ -8,9 +8,10 @@ import LoadingScreen from '../screens/LoadingScreen';
 const Stack = createStackNavigator();
 
 export default function AppNavigator() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isInitialized } = useAuth();
 
-  if (loading) {
+  // Show loading screen while checking authentication
+  if (loading || !isInitialized) {
     return <LoadingScreen />;
   }
 
@@ -20,13 +21,21 @@ export default function AppNavigator() {
         <Stack.Screen 
           name="Main" 
           component={MainNavigator}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: false,
+            animationTypeForReplace: 'push',
+            animationEnabled: true,
+          }}
         />
       ) : (
         <Stack.Screen 
           name="Auth" 
           component={AuthNavigator}
-          options={{ headerShown: false }}
+          options={{ 
+            headerShown: false,
+            animationTypeForReplace: 'pop',
+            animationEnabled: true,
+          }}
         />
       )}
     </Stack.Navigator>

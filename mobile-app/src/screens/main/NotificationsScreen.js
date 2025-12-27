@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
@@ -25,6 +24,15 @@ export default function NotificationsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [stats, setStats] = useState({
+    total: 0,
+    unread: 0,
+    tournament: 0,
+    team: 0,
+    wallet: 0,
+    system: 0
+  });
   
   const { 
     getResponsiveValue, 
@@ -100,44 +108,88 @@ export default function NotificationsScreen({ navigation }) {
   ];
 
   const filters = [
-    { id: 'all', label: 'All', icon: 'notifications' },
-    { id: 'tournament', label: 'Tournaments', icon: 'trophy' },
-    { id: 'team', label: 'Teams', icon: 'people' },
-    { id: 'match', label: 'Matches', icon: 'medal' },
-    { id: 'wallet', label: 'Wallet', icon: 'wallet' },
+    { id: 'all', label: 'All', icon: 'notifications', count: stats.total },
+    { id: 'tournament', label: 'Tournaments', icon: 'trophy', count: stats.tournament },
+    { id: 'team', label: 'Teams', icon: 'people', count: stats.team },
+    { id: 'wallet', label: 'Wallet', icon: 'wallet', count: stats.wallet },
+    { id: 'system', label: 'System', icon: 'settings', count: stats.system },
   ];
 
   useEffect(() => {
     loadNotifications();
+    loadStats();
   }, []);
+
+  // Remove the useEffect that reloads on filter change to prevent flashing
+  // useEffect(() => {
+  //   loadNotifications();
+  // }, [activeFilter]);
+
+  const loadStats = async () => {
+    try {
+      const response = await notificationsAPI.getStats();
+      setStats(response.data.stats);
+    } catch (error) {
+      console.error('Failed to load notification stats:', error);
+      // Fallback: calculate stats from loaded notifications
+      calculateStatsFromNotifications();
+    }
+  };
+
+  const calculateStatsFromNotifications = () => {
+    const stats = {
+      total: notifications.length,
+      unread: notifications.filter(n => !n.read).length,
+      tournament: notifications.filter(n => n.type === 'tournament' || n.type === 'tournament_started' || n.type === 'tournament_result').length,
+      team: notifications.filter(n => n.type === 'team' || n.type === 'team_invitation').length,
+      wallet: notifications.filter(n => n.type === 'wallet' || n.type === 'payment').length,
+      system: notifications.filter(n => n.type === 'system').length,
+    };
+    setStats(stats);
+  };
+
+  // Update stats whenever notifications change
+  useEffect(() => {
+    if (notifications.length > 0) {
+      calculateStatsFromNotifications();
+    }
+  }, [notifications]);
 
   const loadNotifications = async () => {
     try {
       setLoading(true);
+      // Load all notifications at once, filter client-side for better performance
       const response = await notificationsAPI.getAll();
       const apiNotifications = response.data.notifications || [];
       
-      // If no API notifications, use sample data for demo
-      if (apiNotifications.length === 0) {
-        setNotifications(sampleNotifications);
-      } else {
-        // Map API notifications to our format
-        const formattedNotifications = apiNotifications.map(notification => ({
-          id: notification.id,
-          type: notification.type || 'system',
-          title: notification.title,
-          message: notification.message,
-          timestamp: new Date(notification.created_at),
-          read: notification.read || false,
-          icon: getNotificationIcon(notification.type),
-          color: getNotificationColor(notification.type),
-        }));
-        setNotifications(formattedNotifications);
-      }
+      // Map API notifications to our format
+      const formattedNotifications = apiNotifications.map(notification => ({
+        id: notification.id,
+        type: notification.type || 'system',
+        title: notification.title,
+        message: notification.message,
+        timestamp: new Date(notification.created_at),
+        read: notification.read || false,
+        icon: getNotificationIcon(notification.type),
+        color: getNotificationColor(notification.type),
+        data: notification.data ? JSON.parse(notification.data) : {},
+        actionType: notification.action_type,
+        actionTaken: notification.action_taken,
+      }));
+      
+      setNotifications(formattedNotifications);
+      setInitialLoadComplete(true);
     } catch (error) {
       console.error('Failed to load notifications:', error);
-      // Fallback to sample data if API fails
-      setNotifications(sampleNotifications);
+      // Show user-friendly error message
+      Alert.alert(
+        'Connection Error',
+        'Unable to load notifications. Please check your internet connection and try again.',
+        [
+          { text: 'Retry', onPress: () => loadNotifications() },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -148,9 +200,13 @@ export default function NotificationsScreen({ navigation }) {
     switch (type) {
       case 'tournament': return 'trophy';
       case 'team': return 'people';
+      case 'team_invitation': return 'person-add';
       case 'match': return 'medal';
       case 'wallet': return 'wallet';
+      case 'payment': return 'card';
       case 'system': return 'settings';
+      case 'tournament_started': return 'play';
+      case 'tournament_result': return 'trophy';
       default: return 'notifications';
     }
   };
@@ -158,9 +214,13 @@ export default function NotificationsScreen({ navigation }) {
   const getNotificationColor = (type) => {
     switch (type) {
       case 'tournament': return Colors.crackzoneYellow;
+      case 'tournament_started': return Colors.success;
+      case 'tournament_result': return Colors.crackzoneYellow;
       case 'team': return Colors.info;
+      case 'team_invitation': return Colors.info;
       case 'match': return Colors.success;
       case 'wallet': return Colors.success;
+      case 'payment': return Colors.warning;
       case 'system': return Colors.warning;
       default: return Colors.textMuted;
     }
@@ -169,6 +229,7 @@ export default function NotificationsScreen({ navigation }) {
   const onRefresh = () => {
     setRefreshing(true);
     loadNotifications();
+    // loadStats will be called automatically via useEffect when notifications update
   };
 
   const markAsRead = async (notificationId) => {
@@ -181,16 +242,14 @@ export default function NotificationsScreen({ navigation }) {
             : notification
         )
       );
+      // Update stats
+      setStats(prev => ({
+        ...prev,
+        unread: Math.max(0, prev.unread - 1)
+      }));
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
-      // Still update UI optimistically
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, read: true }
-            : notification
-        )
-      );
+      Alert.alert('Error', 'Failed to mark notification as read');
     }
   };
 
@@ -200,16 +259,14 @@ export default function NotificationsScreen({ navigation }) {
       setNotifications(prev => 
         prev.map(notification => ({ ...notification, read: true }))
       );
+      setStats(prev => ({ ...prev, unread: 0 }));
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
-      // Still update UI optimistically
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      );
+      Alert.alert('Error', 'Failed to mark all notifications as read');
     }
   };
 
-  const deleteNotification = (notificationId) => {
+  const deleteNotification = async (notificationId) => {
     Alert.alert(
       'Delete Notification',
       'Are you sure you want to delete this notification?',
@@ -218,21 +275,91 @@ export default function NotificationsScreen({ navigation }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setNotifications(prev => 
-              prev.filter(notification => notification.id !== notificationId)
-            );
+          onPress: async () => {
+            try {
+              await notificationsAPI.deleteNotification(notificationId);
+              const deletedNotification = notifications.find(n => n.id === notificationId);
+              setNotifications(prev => 
+                prev.filter(notification => notification.id !== notificationId)
+              );
+              // Update stats
+              setStats(prev => ({
+                ...prev,
+                total: Math.max(0, prev.total - 1),
+                unread: deletedNotification && !deletedNotification.read ? Math.max(0, prev.unread - 1) : prev.unread,
+                [deletedNotification?.type]: Math.max(0, prev[deletedNotification?.type] - 1)
+              }));
+            } catch (error) {
+              console.error('Failed to delete notification:', error);
+              Alert.alert('Error', 'Failed to delete notification');
+            }
           },
         },
       ]
     );
   };
 
-  const filteredNotifications = activeFilter === 'all' 
-    ? notifications 
-    : notifications.filter(notification => notification.type === activeFilter);
+  const handleNotificationAction = async (notification, action) => {
+    try {
+      await notificationsAPI.handleAction(notification.id, action);
+      
+      // Update notification in local state
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notification.id 
+            ? { ...n, actionTaken: action, data: { ...n.data, status: action } }
+            : n
+        )
+      );
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+      // Show success message based on action
+      let message = '';
+      switch (action) {
+        case 'accept':
+          message = 'Team invitation accepted!';
+          break;
+        case 'decline':
+          message = 'Team invitation declined.';
+          break;
+        case 'mark_joined':
+          message = 'Marked as joined successfully!';
+          break;
+        default:
+          message = 'Action completed successfully!';
+      }
+      
+      Alert.alert('Success', message);
+    } catch (error) {
+      console.error('Failed to handle notification action:', error);
+      Alert.alert('Error', 'Failed to perform action');
+    }
+  };
+
+  const filteredNotifications = useMemo(() => {
+    return activeFilter === 'all' 
+      ? notifications 
+      : notifications.filter(notification => {
+          // Handle different tournament notification types
+          if (activeFilter === 'tournament') {
+            return notification.type === 'tournament' || 
+                   notification.type === 'tournament_started' || 
+                   notification.type === 'tournament_result';
+          }
+          // Handle different team notification types
+          if (activeFilter === 'team') {
+            return notification.type === 'team' || 
+                   notification.type === 'team_invitation';
+          }
+          // Handle different wallet notification types
+          if (activeFilter === 'wallet') {
+            return notification.type === 'wallet' || 
+                   notification.type === 'payment';
+          }
+          return notification.type === activeFilter;
+        });
+  }, [notifications, activeFilter]);
+
+  const unreadCount = stats.unread;
 
   const formatTimestamp = (timestamp) => {
     const now = new Date();
@@ -311,6 +438,53 @@ export default function NotificationsScreen({ navigation }) {
             {notification.message}
           </Text>
           
+          {/* Action Buttons for Interactive Notifications */}
+          {notification.type === 'team_invitation' && !notification.actionTaken && (
+            <View style={[styles.actionButtons, { marginTop: getSpacing(Layout.spacing.md) }]}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.declineButton]}
+                onPress={() => handleNotificationAction(notification, 'decline')}
+              >
+                <Text style={styles.declineButtonText}>Decline</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.acceptButton]}
+                onPress={() => handleNotificationAction(notification, 'accept')}
+              >
+                <Text style={styles.acceptButtonText}>Accept</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {notification.type === 'tournament_started' && notification.actionType === 'join_match' && !notification.actionTaken && (
+            <View style={[styles.actionButtons, { marginTop: getSpacing(Layout.spacing.md) }]}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.joinButton]}
+                onPress={() => handleNotificationAction(notification, 'mark_joined')}
+              >
+                <Ionicons name="play" size={16} color={Colors.text} />
+                <Text style={styles.joinButtonText}>Join Match</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {/* Status indicator for completed actions */}
+          {notification.actionTaken && (
+            <View style={[styles.actionStatus, { marginTop: getSpacing(Layout.spacing.sm) }]}>
+              <Ionicons 
+                name="checkmark-circle" 
+                size={16} 
+                color={Colors.success} 
+              />
+              <Text style={styles.actionStatusText}>
+                {notification.actionTaken === 'accept' ? 'Accepted' :
+                 notification.actionTaken === 'decline' ? 'Declined' :
+                 notification.actionTaken === 'joined' ? 'Joined' :
+                 'Completed'}
+              </Text>
+            </View>
+          )}
+          
           {!notification.read && (
             <View style={[
               styles.unreadIndicator,
@@ -326,12 +500,12 @@ export default function NotificationsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (loading && !initialLoadComplete) {
     return <NotificationsSkeleton />;
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['left', 'right']}>
+    <View style={styles.container}>
       <LinearGradient
         colors={[Colors.crackzoneBlack, Colors.crackzoneGray]}
         style={styles.gradient}
@@ -340,8 +514,37 @@ export default function NotificationsScreen({ navigation }) {
         <ResponsiveHeader
           title="Notifications"
           onBackPress={() => navigation.goBack()}
-          rightIcon="checkmark-done-outline"
-          onRightPress={markAllAsRead}
+          rightIcon={unreadCount > 0 ? "checkmark-done-outline" : "trash-outline"}
+          onRightPress={unreadCount > 0 ? markAllAsRead : () => {
+            Alert.alert(
+              'Clear All Notifications',
+              'Are you sure you want to delete all notifications? This action cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear All',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await notificationsAPI.clearAll();
+                      setNotifications([]);
+                      setStats({
+                        total: 0,
+                        unread: 0,
+                        tournament: 0,
+                        team: 0,
+                        wallet: 0,
+                        system: 0
+                      });
+                    } catch (error) {
+                      console.error('Failed to clear all notifications:', error);
+                      Alert.alert('Error', 'Failed to clear all notifications');
+                    }
+                  }
+                }
+              ]
+            );
+          }}
           showBorder={false}
         />
 
@@ -406,6 +609,23 @@ export default function NotificationsScreen({ navigation }) {
                 ]}>
                   {filter.label}
                 </Text>
+                {filter.count > 0 && (
+                  <View style={[
+                    styles.filterBadge,
+                    {
+                      marginLeft: getSpacing(Layout.spacing.xs),
+                      paddingHorizontal: getSpacing(Layout.spacing.xs),
+                      paddingVertical: 2,
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.filterBadgeText,
+                      { fontSize: getFontSize(10) }
+                    ]}>
+                      {filter.count}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -468,7 +688,7 @@ export default function NotificationsScreen({ navigation }) {
           </View>
         </ScrollView>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -511,6 +731,17 @@ const styles = StyleSheet.create({
   },
   activeFilterTabText: {
     color: Colors.crackzoneBlack,
+  },
+  filterBadge: {
+    backgroundColor: Colors.crackzoneYellow + '40',
+    borderRadius: Layout.borderRadius.sm,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterBadgeText: {
+    color: Colors.crackzoneBlack,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -566,6 +797,62 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.crackzoneYellow,
   },
+  
+  // Action Buttons
+  actionButtons: {
+    flexDirection: 'row',
+    gap: Layout.spacing.sm,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Layout.spacing.md,
+    paddingVertical: Layout.spacing.sm,
+    borderRadius: Layout.borderRadius.md,
+    minHeight: 36,
+  },
+  acceptButton: {
+    backgroundColor: Colors.success + '20',
+    borderWidth: 1,
+    borderColor: Colors.success,
+  },
+  acceptButtonText: {
+    color: Colors.success,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  declineButton: {
+    backgroundColor: Colors.error + '20',
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  declineButtonText: {
+    color: Colors.error,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  joinButton: {
+    backgroundColor: Colors.crackzoneYellow + '20',
+    borderWidth: 1,
+    borderColor: Colors.crackzoneYellow,
+  },
+  joinButtonText: {
+    color: Colors.crackzoneYellow,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: Layout.spacing.xs,
+  },
+  actionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionStatusText: {
+    color: Colors.success,
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: Layout.spacing.xs,
+  },
+  
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',

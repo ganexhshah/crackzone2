@@ -5,13 +5,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as AuthSession from 'expo-auth-session';
@@ -41,7 +41,18 @@ export default function LoginScreen({ navigation }) {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Login Failed', result.error);
+      let errorMessage = result.error;
+      
+      // Provide more helpful error messages
+      if (result.error === 'Please sign in with Google') {
+        errorMessage = 'This account was created with Google. Please use "Continue with Google" to sign in.';
+      } else if (result.error === 'Invalid credentials') {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (result.error === 'User already exists') {
+        errorMessage = 'An account with this email already exists. Please try logging in instead.';
+      }
+      
+      Alert.alert('Login Failed', errorMessage);
     }
   };
 
@@ -49,8 +60,8 @@ export default function LoginScreen({ navigation }) {
     try {
       setGoogleLoading(true);
       
-      // Create the Google OAuth URL
-      const googleAuthUrl = 'http://192.168.18.13:5000/api/auth/google';
+      // Create the Google OAuth URL for mobile
+      const googleAuthUrl = 'http://192.168.18.13:5000/api/auth/google/mobile';
       
       // Open the Google OAuth flow
       const result = await WebBrowser.openAuthSessionAsync(
@@ -64,14 +75,30 @@ export default function LoginScreen({ navigation }) {
         const urlParams = new URLSearchParams(url.split('?')[1]);
         const token = urlParams.get('token');
         const profileComplete = urlParams.get('profileComplete');
+        const error = urlParams.get('error');
+
+        if (error) {
+          let errorMessage = 'Authentication failed';
+          if (error === 'oauth_not_configured') {
+            errorMessage = 'Google OAuth is not configured on the server';
+          } else if (error === 'auth_failed') {
+            errorMessage = 'Google authentication failed';
+          }
+          Alert.alert('Login Failed', errorMessage);
+          return;
+        }
 
         if (token) {
           // Set the auth token and navigate
-          await login({ token, isGoogleAuth: true });
+          const loginResult = await login({ token, isGoogleAuth: true });
           
-          if (profileComplete === 'false') {
-            // Navigate to complete profile if needed
-            navigation.navigate('CompleteProfile');
+          if (loginResult.success) {
+            if (profileComplete === 'false') {
+              // Navigate to complete profile if needed
+              navigation.navigate('CompleteProfile');
+            }
+          } else {
+            Alert.alert('Login Failed', loginResult.error);
           }
         } else {
           Alert.alert('Login Failed', 'Failed to authenticate with Google');
@@ -101,12 +128,6 @@ export default function LoginScreen({ navigation }) {
           <ScrollView contentContainerStyle={styles.scrollContent}>
             {/* Header */}
             <View style={styles.header}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Ionicons name="arrow-back" size={24} color={Colors.text} />
-              </TouchableOpacity>
               <Text style={styles.title}>Welcome Back</Text>
               <Text style={styles.subtitle}>Sign in to your account</Text>
             </View>
@@ -213,9 +234,6 @@ const styles = StyleSheet.create({
   header: {
     marginTop: Layout.spacing.xl,
     marginBottom: Layout.spacing.xl * 2,
-  },
-  backButton: {
-    marginBottom: Layout.spacing.lg,
   },
   title: {
     fontSize: 32,

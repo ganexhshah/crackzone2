@@ -16,6 +16,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     checkAuthStatus();
@@ -23,6 +25,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
+      setAuthError(null);
       const token = await SecureStore.getItemAsync('authToken');
       const savedUser = await SecureStore.getItemAsync('user');
       
@@ -35,15 +38,20 @@ export const AuthProvider = ({ children }) => {
           const response = await authAPI.getCurrentUser();
           setUser(response.data.user);
         } catch (error) {
-          // Token invalid, clear auth
+          // Token invalid, clear auth silently
           await logout();
         }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // Silent error handling - only log in development
+      if (__DEV__) {
+        console.error('Auth check failed:', error);
+      }
+      setAuthError('Authentication check failed');
       await logout();
     } finally {
       setLoading(false);
+      setIsInitialized(true);
     }
   };
 
@@ -76,7 +84,10 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, user: userData };
     } catch (error) {
-      console.error('Login failed:', error);
+      // Only log in development
+      if (__DEV__) {
+        console.error('Login failed:', error);
+      }
       return { 
         success: false, 
         error: error.response?.data?.error || 'Login failed' 
@@ -97,7 +108,10 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true, user: newUser };
     } catch (error) {
-      console.error('Registration failed:', error);
+      // Only log in development
+      if (__DEV__) {
+        console.error('Registration failed:', error);
+      }
       return { 
         success: false, 
         error: error.response?.data?.error || 'Registration failed' 
@@ -112,20 +126,36 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('authToken');
-    await SecureStore.deleteItemAsync('user');
-    setUser(null);
-    setIsAuthenticated(false);
+    try {
+      await SecureStore.deleteItemAsync('authToken');
+      await SecureStore.deleteItemAsync('user');
+    } catch (error) {
+      // Silent error handling
+      if (__DEV__) {
+        console.error('Logout error:', error);
+      }
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthError(null);
+    }
+  };
+
+  const clearError = () => {
+    setAuthError(null);
   };
 
   const value = {
     user,
     isAuthenticated,
     loading,
+    authError,
+    isInitialized,
     login,
     register,
     logout,
     updateUser,
+    clearError,
   };
 
   return (

@@ -5,7 +5,9 @@ import {
   Trophy, 
   Target,
   Users, 
-  User 
+  User,
+  Gift,
+  Award
 } from 'lucide-react'
 
 const MobileBottomMenu = () => {
@@ -14,7 +16,7 @@ const MobileBottomMenu = () => {
   const menuItems = [
     { name: 'Dashboard', icon: Gamepad2, path: '/dashboard' },
     { name: 'Tournaments', icon: Trophy, path: '/tournaments' },
-    { name: 'My Matches', icon: Target, path: '/my-matches' },
+    { name: 'Leaderboard', icon: Award, path: '/leaderboard' },
     { name: 'Teams', icon: Users, path: '/teams' },
     { name: 'Profile', icon: User, path: '/profile' }
   ]

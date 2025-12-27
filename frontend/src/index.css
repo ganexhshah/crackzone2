@@ -8,7 +8,12 @@
   }
   
   body {
-    @apply bg-crackzone-black text-white font-gaming;
+    @apply bg-crackzone-black font-gaming;
+  }
+  
+  /* Apply white text only to main app areas, not admin */
+  .main-app {
+    @apply text-white;
   }
 }
 

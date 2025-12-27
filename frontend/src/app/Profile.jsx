@@ -289,6 +289,12 @@ const Profile = () => {
                 Edit Profile
               </button>
               <button 
+                onClick={() => window.open(`/u/${userProfile.username}`, '_blank')}
+                className="bg-crackzone-gray/50 border border-crackzone-yellow/30 text-crackzone-yellow px-6 py-2 rounded-lg font-medium hover:bg-crackzone-yellow/10 transition-colors"
+              >
+                View Public Profile
+              </button>
+              <button 
                 onClick={() => setIsSettingsModalOpen(true)}
                 className="bg-crackzone-gray/50 border border-crackzone-yellow/30 text-crackzone-yellow px-6 py-2 rounded-lg font-medium hover:bg-crackzone-yellow/10 transition-colors"
               >

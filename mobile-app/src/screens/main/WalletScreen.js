@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
@@ -23,7 +22,7 @@ import { useResponsive } from '../../hooks/useResponsive';
 import ResponsiveHeader from '../../components/ResponsiveHeader';
 import WalletSkeleton from '../../components/skeletons/WalletSkeleton';
 
-export default function WalletScreen({ navigation }) {
+export default function WalletScreen({ navigation, route }) {
   const [wallet, setWallet] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +43,13 @@ export default function WalletScreen({ navigation }) {
   useEffect(() => {
     loadWalletData();
     loadPaymentMethods();
-  }, []);
+    
+    // Handle retry payment from navigation params
+    if (route.params?.retryPayment && route.params?.amount) {
+      setAmount(route.params.amount.toString());
+      setAddMoneyModal(true);
+    }
+  }, [route.params]);
 
   const loadWalletData = async () => {
     try {
@@ -192,7 +197,10 @@ export default function WalletScreen({ navigation }) {
   };
 
   const renderTransaction = ({ item }) => (
-    <View style={styles.transactionItem}>
+    <TouchableOpacity 
+      style={styles.transactionItem}
+      onPress={() => navigation.navigate('TransactionDetail', { transaction: item })}
+    >
       <View style={styles.transactionLeft}>
         <Ionicons 
           name={getTransactionIcon(item.type)} 
@@ -204,14 +212,17 @@ export default function WalletScreen({ navigation }) {
           <Text style={styles.transactionDate}>{formatDate(item.created_at)}</Text>
         </View>
       </View>
-      <Text style={[
-        styles.transactionAmount,
-        { color: getTransactionColor(item.type) }
-      ]}>
-        {item.type === 'debit' || item.type === 'withdrawal' || item.type === 'tournament_fee' ? '-' : '+'}
-        {formatCurrency(item.amount)}
-      </Text>
-    </View>
+      <View style={styles.transactionRight}>
+        <Text style={[
+          styles.transactionAmount,
+          { color: getTransactionColor(item.type) }
+        ]}>
+          {item.type === 'debit' || item.type === 'withdrawal' || item.type === 'tournament_fee' ? '-' : '+'}
+          {formatCurrency(item.amount)}
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+      </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
@@ -219,7 +230,7 @@ export default function WalletScreen({ navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={Platform.OS === 'ios' ? ['top', 'left', 'right'] : ['left', 'right']}>
+    <View style={styles.container}>
       <LinearGradient colors={[Colors.crackzoneBlack, Colors.crackzoneGray]} style={styles.gradient}>
         {/* Responsive Header */}
         <ResponsiveHeader
@@ -393,7 +404,7 @@ export default function WalletScreen({ navigation }) {
           </View>
         </Modal>
       </LinearGradient>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -536,6 +547,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+  },
+  transactionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.spacing.sm,
   },
   transactionDetails: {
     marginLeft: Layout.spacing.md,

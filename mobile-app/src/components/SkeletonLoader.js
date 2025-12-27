@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, Animated, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../constants/Colors';
@@ -17,18 +17,11 @@ export const SkeletonLoader = ({
   useEffect(() => {
     if (animated) {
       const animation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(animatedValue, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: false,
-          }),
-          Animated.timing(animatedValue, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: false,
-          }),
-        ])
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: false,
+        })
       );
       animation.start();
       return () => animation.stop();
@@ -37,7 +30,7 @@ export const SkeletonLoader = ({
 
   const translateX = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [-100, 100],
+    outputRange: [-150, 150],
   });
 
   return (
@@ -65,7 +58,9 @@ export const SkeletonLoader = ({
           <LinearGradient
             colors={[
               'transparent',
-              Colors.border + '40',
+              Colors.crackzoneYellow + '15',
+              Colors.crackzoneYellow + '25',
+              Colors.crackzoneYellow + '15',
               'transparent',
             ]}
             start={{ x: 0, y: 0 }}
