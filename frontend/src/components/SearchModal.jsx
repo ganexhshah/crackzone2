@@ -50,16 +50,16 @@ const SearchModal = ({ isOpen, onClose }) => {
         profileAPI.searchUsers(query).catch(() => ({ data: { users: [] } }))
       ])
 
-      const tournaments = tournamentsRes.data.filter(t => 
-        t.title.toLowerCase().includes(query.toLowerCase()) ||
-        t.game.toLowerCase().includes(query.toLowerCase())
+      const tournaments = (tournamentsRes.data || []).filter(t => 
+        t.title?.toLowerCase().includes(query.toLowerCase()) ||
+        t.game?.toLowerCase().includes(query.toLowerCase())
       ).slice(0, 5)
 
-      const teams = teamsRes.data.filter(t =>
-        t.name.toLowerCase().includes(query.toLowerCase())
+      const teams = (teamsRes.data || []).filter(t =>
+        t.name?.toLowerCase().includes(query.toLowerCase())
       ).slice(0, 5)
 
-      const users = usersRes.data.users.slice(0, 5)
+      const users = (usersRes.data?.users || []).slice(0, 5)
 
       setResults({
         tournaments,

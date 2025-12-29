@@ -79,11 +79,11 @@ const Dashboard = () => {
         dashboardAPI.getActivities().catch(err => ({ data: { activities: [] }}))
       ])
 
-      setStats(statsResponse.data.stats)
-      setRecentTournaments(recentResponse.data.tournaments)
-      setUpcomingTournaments(upcomingResponse.data.tournaments)
-      setMyRegistrations(registrationsResponse.data.registrations)
-      setActivities(activitiesResponse.data.activities)
+      setStats(statsResponse.data?.stats || {})
+      setRecentTournaments(recentResponse.data?.tournaments || [])
+      setUpcomingTournaments(upcomingResponse.data?.tournaments || [])
+      setMyRegistrations(registrationsResponse.data?.registrations || [])
+      setActivities(activitiesResponse.data?.activities || [])
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err)
       setError('Failed to load dashboard data')
@@ -131,6 +131,11 @@ const Dashboard = () => {
   }
 
   const filterByUserGame = (items) => {
+    // Ensure items is an array
+    if (!Array.isArray(items)) {
+      return [];
+    }
+    
     // If user has a primary game preference, filter content by that game
     if (user?.primary_game && user.primary_game !== 'both') {
       return items.filter(item => 
