@@ -10,6 +10,12 @@ const GoogleAuth = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
+  // Debug logging
+  useEffect(() => {
+    console.log('GoogleAuth component mounted');
+    console.log('Current URL:', window.location.href);
+  }, []);
+
   useEffect(() => {
     // Check for error in URL parameters
     const urlError = searchParams.get('error')
@@ -51,6 +57,11 @@ const GoogleAuth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-crackzone-black via-crackzone-gray to-crackzone-black flex items-center justify-center p-4">
+      {/* Debug Info */}
+      <div className="fixed top-4 right-4 bg-red-500 text-white p-2 rounded text-xs">
+        GoogleAuth Component Loaded ✅
+      </div>
+      
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
