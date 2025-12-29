@@ -1938,7 +1938,6 @@ router.get('/user-rewards', async (req, res) => {
   }
 });
 
-module.exports = router;
 // Manual Payment Management
 
 // Get all manual payment requests
@@ -2588,3 +2587,4 @@ router.post('/tournaments/:id/bulk-operations', verifyAdminToken, async (req, re
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
+module.exports = router;
