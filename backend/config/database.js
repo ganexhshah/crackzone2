@@ -3,29 +3,58 @@ require('dotenv').config();
 
 console.log('Using PostgreSQL database');
 
+// Database configuration - supports both DATABASE_URL and individual env vars
+let poolConfig;
+
+if (process.env.DATABASE_URL) {
+  // Use DATABASE_URL (Render, Heroku, etc.)
+  console.log('Using DATABASE_URL for connection');
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+    // Connection pool settings for high concurrency
+    max: 20, // Maximum number of clients in the pool
+    min: 5,  // Minimum number of clients in the pool
+    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 10000, // Return error after 10 seconds if connection could not be established
+    maxUses: 7500, // Close (and replace) a connection after it has been used this many times
+    
+    // Performance optimizations
+    statement_timeout: 30000, // 30 second query timeout
+    query_timeout: 30000,
+    application_name: 'crackzone_backend',
+    
+    // SSL configuration for production
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+} else {
+  // Use individual environment variables (local development)
+  console.log('Using individual DB environment variables');
+  poolConfig = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'crackzone_db',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    
+    // Connection pool settings for high concurrency
+    max: 20, // Maximum number of clients in the pool
+    min: 5,  // Minimum number of clients in the pool
+    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+    connectionTimeoutMillis: 10000, // Return error after 10 seconds if connection could not be established
+    maxUses: 7500, // Close (and replace) a connection after it has been used this many times
+    
+    // Performance optimizations
+    statement_timeout: 30000, // 30 second query timeout
+    query_timeout: 30000,
+    application_name: 'crackzone_backend',
+    
+    // SSL configuration for production
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  };
+}
+
 // Enhanced connection pool configuration for high-scale
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'crackzone_db',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  
-  // Connection pool settings for high concurrency
-  max: 20, // Maximum number of clients in the pool
-  min: 5,  // Minimum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 10000, // Return error after 10 seconds if connection could not be established
-  maxUses: 7500, // Close (and replace) a connection after it has been used this many times
-  
-  // Performance optimizations
-  statement_timeout: 30000, // 30 second query timeout
-  query_timeout: 30000,
-  application_name: 'crackzone_backend',
-  
-  // SSL configuration for production
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const pool = new Pool(poolConfig);
 
 // Enhanced error handling and monitoring
 pool.on('connect', (client) => {
