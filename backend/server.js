@@ -109,8 +109,11 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+  },
+  name: 'crackzone.sid'
 }));
 
 // Passport middleware
@@ -153,6 +156,16 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString()
     });
   }
+});
+
+// Root endpoint for basic health check
+app.get('/', (req, res) => {
+  res.json({
+    message: 'CrackZone API is running',
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    version: '1.0.0'
+  });
 });
 
 // Routes (temporarily without rate limiting to fix deployment)
@@ -284,6 +297,10 @@ const initializeServer = async () => {
   try {
     // Initialize security configuration
     initializeSecurity();
+    
+    // Auto-initialize database
+    const { autoInitializeDatabase } = require('./scripts/auto-initialize-db');
+    await autoInitializeDatabase();
     
     // Start performance monitoring
     performanceMonitor.startMonitoring();

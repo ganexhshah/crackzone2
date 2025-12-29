@@ -23,7 +23,7 @@ router.get('/', authenticateToken, async (req, res) => {
     if (wallet.rows.length === 0) {
       // Create wallet if doesn't exist
       const newWallet = await pool.query(
-        'INSERT INTO wallets (user_id) VALUES ($1) RETURNING *',
+        'INSERT INTO wallets (user_id, balance, total_earnings, total_spent) VALUES ($1, 0, 0, 0) RETURNING *',
         [userId]
       );
       wallet = newWallet;
@@ -31,13 +31,39 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const walletData = wallet.rows[0];
 
+    // Get recent transactions
+    let recentTransactions = [];
+    try {
+      const transactions = await pool.query(
+        `SELECT * FROM wallet_transactions 
+         WHERE user_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 10`,
+        [userId]
+      );
+
+      recentTransactions = transactions.rows.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        amount: parseFloat(tx.amount),
+        description: tx.description || 'Transaction',
+        date: tx.created_at.toISOString().split('T')[0],
+        time: tx.created_at.toTimeString().split(' ')[0].slice(0, 5),
+        status: tx.status || 'completed',
+        transactionId: `TXN${tx.id}${Date.now().toString().slice(-4)}`
+      }));
+    } catch (error) {
+      console.log('Transactions table not available, using empty array');
+    }
+
     res.json({
       wallet: {
-        balance: parseFloat(walletData.balance),
-        totalEarnings: parseFloat(walletData.total_earnings),
-        totalSpent: parseFloat(walletData.total_spent),
-        pendingAmount: parseFloat(walletData.pending_amount)
-      }
+        balance: parseFloat(walletData.balance || 0),
+        totalEarnings: parseFloat(walletData.total_earnings || 0),
+        totalSpent: parseFloat(walletData.total_spent || 0),
+        pendingAmount: 0
+      },
+      recentTransactions
     });
   } catch (error) {
     console.error('Get wallet error:', error);
