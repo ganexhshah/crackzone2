@@ -48,6 +48,7 @@ const walletRoutes = require('./routes/wallet');
 const profileRoutes = require('./routes/profile');
 const dashboardRoutes = require('./routes/dashboard');
 const notificationRoutes = require('./routes/notifications');
+const setupRoutes = require('./routes/setup');
 const rewardsRoutes = require('./routes/rewards');
 const adminRoutes = require('./routes/admin');
 const uploadsRoutes = require('./routes/uploads');
@@ -167,6 +168,7 @@ app.use('/api/rewards', rateLimits.general, rewardsRoutes);
 app.use('/api/admin', rateLimits.admin, adminRoutes);
 app.use('/api/uploads', rateLimits.upload, uploadsRoutes);
 app.use('/api/leaderboard', rateLimits.general, leaderboardRoutes);
+app.use('/api/setup', rateLimits.general, setupRoutes);
 
 // Security dashboard endpoint (admin only)
 app.get('/api/security/dashboard', authenticateAdmin, (req, res) => {
