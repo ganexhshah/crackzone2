@@ -83,7 +83,7 @@ router.get('/', async (req, res) => {
       LEFT JOIN tournaments t ON tp.tournament_id = t.id
       WHERE u.id IS NOT NULL ${whereClause}
       GROUP BY u.id, u.username
-      HAVING COUNT(DISTINCT tp.tournament_id) > 0
+      HAVING COUNT(DISTINCT tp.tournament_id) >= 0
       ORDER BY overall_score DESC, tournaments_played DESC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
@@ -99,7 +99,6 @@ router.get('/', async (req, res) => {
       LEFT JOIN tournament_participants tp ON u.id = tp.user_id
       LEFT JOIN tournaments t ON tp.tournament_id = t.id
       WHERE u.id IS NOT NULL ${whereClause}
-      AND tp.id IS NOT NULL
     `;
 
     const countParams = params.slice(0, -2); // Remove limit and offset
@@ -194,7 +193,6 @@ router.get('/stats', async (req, res) => {
       LEFT JOIN tournament_participants tp ON u.id = tp.user_id
       LEFT JOIN tournaments t ON tp.tournament_id = t.id
       WHERE u.id IS NOT NULL ${whereClause}
-      AND tp.id IS NOT NULL
     `;
 
     const statsResult = await pool.query(statsQuery, params);
@@ -212,7 +210,7 @@ router.get('/stats', async (req, res) => {
       LEFT JOIN tournaments t ON tp.tournament_id = t.id
       WHERE u.id IS NOT NULL ${whereClause}
       GROUP BY u.id, u.username
-      HAVING COUNT(DISTINCT tp.tournament_id) > 0
+      HAVING COUNT(DISTINCT tp.tournament_id) >= 0
       ORDER BY tournaments_played DESC, wins DESC
       LIMIT 1
     `;

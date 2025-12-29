@@ -146,7 +146,7 @@ router.get('/upcoming-tournaments', async (req, res) => {
         t.prize_pool,
         t.max_participants,
         t.start_date,
-        t.registration_deadline as registration_end,
+        t.registration_deadline,
         (SELECT COUNT(*) FROM tournament_participants tp WHERE tp.tournament_id = t.id) as registered_count,
         CASE 
           WHEN NOW() < t.registration_deadline AND 
