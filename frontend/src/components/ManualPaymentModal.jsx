@@ -3,7 +3,18 @@ import { X, Upload, Check, AlertCircle, Loader, QrCode, CreditCard, Building2 } 
 import { walletAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // Production - use environment variable or default
+    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com/api';
+  } else {
+    // Development
+    return 'http://localhost:5000/api';
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const ManualPaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
   const { isAuthenticated, user } = useAuth();

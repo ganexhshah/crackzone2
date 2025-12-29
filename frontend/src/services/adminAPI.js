@@ -1,4 +1,15 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // Production - use environment variable or default
+    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com';
+  } else {
+    // Development
+    return 'http://localhost:5000';
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class AdminAPI {
   constructor() {

@@ -3,7 +3,18 @@ import { Upload, Save, Eye, EyeOff, Loader, Check, X } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { adminAPI } from '../services/adminAPI';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // Production - use environment variable or default
+    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com/api';
+  } else {
+    // Development
+    return 'http://localhost:5000/api';
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const PaymentMethodSettings = () => {
   const [methods, setMethods] = useState([]);
