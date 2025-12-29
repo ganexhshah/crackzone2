@@ -53,12 +53,25 @@ const Wallet = () => {
     try {
       setLoading(true)
       const response = await walletAPI.getWallet()
-      setWalletData(response.data.wallet)
-      setTransactions(response.data.recentTransactions)
+      setWalletData(response.data?.wallet || {
+        balance: 0,
+        totalEarnings: 0,
+        totalSpent: 0,
+        pendingAmount: 0
+      })
+      setTransactions(response.data?.recentTransactions || [])
       setError('')
     } catch (err) {
       setError('Failed to load wallet data')
       console.error('Wallet fetch error:', err)
+      // Set default values on error
+      setWalletData({
+        balance: 0,
+        totalEarnings: 0,
+        totalSpent: 0,
+        pendingAmount: 0
+      })
+      setTransactions([])
     } finally {
       setLoading(false)
     }
@@ -482,9 +495,16 @@ const Wallet = () => {
             <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
               <h3 className="text-lg font-bold text-white mb-4">Recent Activity</h3>
               <div className="space-y-3">
-                {transactions.slice(0, 3).map(transaction => (
-                  <TransactionItem key={transaction.id} transaction={transaction} />
-                ))}
+                {(transactions || []).length > 0 ? (
+                  (transactions || []).slice(0, 3).map(transaction => (
+                    <TransactionItem key={transaction.id} transaction={transaction} />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <WalletIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-400">No recent transactions</p>
+                  </div>
+                )}
               </div>
               <button 
                 onClick={() => setActiveTab('transactions')}
@@ -537,9 +557,17 @@ const Wallet = () => {
             </div>
             
             <div className="space-y-4">
-              {transactions.map(transaction => (
-                <TransactionItem key={transaction.id} transaction={transaction} />
-              ))}
+              {(transactions || []).length > 0 ? (
+                (transactions || []).map(transaction => (
+                  <TransactionItem key={transaction.id} transaction={transaction} />
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <WalletIcon className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400 text-lg">No transactions found</p>
+                  <p className="text-gray-500 text-sm">Your transaction history will appear here</p>
+                </div>
+              )}
             </div>
           </div>
         )}
