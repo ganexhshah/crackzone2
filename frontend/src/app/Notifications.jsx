@@ -57,7 +57,8 @@ const Notifications = () => {
       }
       
       const response = await notificationsAPI.getAll(params)
-      setNotifications(response.data.notifications.map(n => ({
+      const notificationsData = response.data?.notifications || []
+      setNotifications(notificationsData.map(n => ({
         ...n,
         icon: getNotificationIcon(n.type),
         color: getNotificationColor(n.type),
@@ -68,6 +69,7 @@ const Notifications = () => {
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
       setError('Failed to load notifications')
+      setNotifications([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -76,9 +78,24 @@ const Notifications = () => {
   const fetchStats = async () => {
     try {
       const response = await notificationsAPI.getStats()
-      setStats(response.data.stats)
+      setStats(response.data?.stats || {
+        total: 0,
+        unread: 0,
+        tournament: 0,
+        team: 0,
+        wallet: 0,
+        system: 0
+      })
     } catch (err) {
       console.error('Failed to fetch notification stats:', err)
+      setStats({
+        total: 0,
+        unread: 0,
+        tournament: 0,
+        team: 0,
+        wallet: 0,
+        system: 0
+      })
     }
   }
 

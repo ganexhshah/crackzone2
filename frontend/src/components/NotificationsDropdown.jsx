@@ -35,9 +35,11 @@ const NotificationsDropdown = () => {
     try {
       setLoading(true)
       const response = await notificationsAPI.getAll({ limit: 5 })
-      setNotifications(response.data.notifications.slice(0, 5))
+      const notificationsData = response.data?.notifications || []
+      setNotifications(notificationsData.slice(0, 5))
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
+      setNotifications([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
@@ -46,9 +48,10 @@ const NotificationsDropdown = () => {
   const fetchUnreadCount = async () => {
     try {
       const response = await notificationsAPI.getStats()
-      setUnreadCount(response.data.stats.unread || 0)
+      setUnreadCount(response.data?.stats?.unread || 0)
     } catch (err) {
       console.error('Failed to fetch unread count:', err)
+      setUnreadCount(0) // Set to 0 on error
     }
   }
 
