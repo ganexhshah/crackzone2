@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import App from './App'
 import { Login, Signup } from './auth'
+import GoogleAuth from './auth/GoogleAuth'
 import GoogleCallback from './auth/GoogleCallback'
 import CompleteProfile from './auth/CompleteProfile'
 import GameSelection from './auth/GameSelection'
@@ -41,6 +42,7 @@ const AppRouter = () => {
           <Route path="/" element={<App />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/google" element={<GoogleAuth />} />
           <Route path="/auth/callback" element={<GoogleCallback />} />
           <Route path="/complete-profile" element={
             <ProtectedRoute>
