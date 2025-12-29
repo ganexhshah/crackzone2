@@ -1,15 +1,7 @@
-// Determine API base URL based on environment
-const getApiBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    // Production - use environment variable or default
-    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com/api';
-  } else {
-    // Development
-    return 'http://localhost:5000/api';
-  }
-};
+import { getCorrectApiUrl } from '../utils/debug';
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API base URL
+const API_BASE_URL = getCorrectApiUrl();
 
 class AdminAPI {
   constructor() {
