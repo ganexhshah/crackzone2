@@ -22,40 +22,38 @@
 
 ### **Phase 2: Free Hosting Setup**
 
-#### 🚂 **Railway Deployment (Recommended)**
+#### 🚂 **Render.com Deployment (Recommended for Free Tier)**
 
-1. **Install Railway CLI**
-   ```bash
-   npm install -g @railway/cli
-   railway login
+1. **Create Render Account**
+   - Go to https://render.com
+   - Sign up with GitHub account
+   - Connect repository: https://github.com/ganexhshah/crackzone2
+
+2. **Deploy Database**
+   ```
+   Service Type: PostgreSQL
+   Name: crackzone-db
+   Database: crackzone_db
+   User: crackzone_user
+   Plan: Free
    ```
 
-2. **Create Project & Database**
-   ```bash
-   cd backend
-   railway init
-   railway add postgresql
-   railway add redis  # Optional for caching
+3. **Deploy Backend API**
+   ```
+   Service Type: Web Service
+   Repository: ganexhshah/crackzone2
+   Root Directory: backend
+   Build Command: npm install
+   Start Command: npm start
+   Plan: Free
    ```
 
-3. **Set Environment Variables**
-   ```bash
-   # Copy from .env.production and set each variable
-   railway variables set NODE_ENV=production
-   railway variables set JWT_SECRET=fa6cf080053235755dcc...
-   railway variables set ADMIN_PASSWORD=a9c9e9cc59a16ea73653d31c2066c9f3
-   railway variables set CORS_ORIGIN=https://your-frontend.vercel.app
-   # ... set all other variables from .env.production
-   ```
+4. **Set Environment Variables**
+   Copy all variables from `backend/.env.production` to Render dashboard
 
-4. **Deploy Backend**
+5. **Test Deployment**
    ```bash
-   railway deploy
-   ```
-
-5. **Run Database Migrations**
-   ```bash
-   railway run npm run migrate:all
+   curl https://crackzone-api.onrender.com/health
    ```
 
 #### 🎨 **Vercel Frontend Deployment**
@@ -82,21 +80,21 @@
 
 1. **Backend CORS Configuration**
    ```bash
-   # In Railway dashboard, update CORS_ORIGIN
-   CORS_ORIGIN=https://your-frontend.vercel.app,https://your-custom-domain.com
+   # In Render dashboard, update CORS_ORIGIN
+   CORS_ORIGIN=https://crackzone-frontend.vercel.app
    ```
 
 2. **Google OAuth Callback**
    ```bash
    # Update in Google Cloud Console
-   Authorized redirect URIs: https://your-backend.railway.app/api/auth/google/callback
-   Authorized JavaScript origins: https://your-frontend.vercel.app
+   Authorized redirect URIs: https://crackzone-api.onrender.com/api/auth/google/callback
+   Authorized JavaScript origins: https://crackzone-frontend.vercel.app
    ```
 
 3. **Frontend API URL**
    ```bash
    # Update in Vercel dashboard
-   VITE_API_URL=https://your-backend.railway.app/api
+   VITE_API_URL=https://crackzone-api.onrender.com/api
    ```
 
 ### **Phase 4: Testing & Verification**
@@ -105,19 +103,19 @@
 
 1. **Health Check**
    ```bash
-   curl https://your-backend.railway.app/health
+   curl https://crackzone-api.onrender.com/health
    ```
 
 2. **Security Test**
    ```bash
    # Update target URL in backend/scripts/test-security.js
-   BASE_URL=https://your-backend.railway.app npm run test:security
+   BASE_URL=https://crackzone-api.onrender.com npm run test:security
    ```
 
 3. **Performance Test**
    ```bash
    # Update target URL in backend/scripts/quick-performance-test.js
-   BASE_URL=https://your-backend.railway.app npm run test:performance
+   BASE_URL=https://crackzone-api.onrender.com npm run test:performance
    ```
 
 4. **Frontend Functionality**
@@ -137,11 +135,11 @@
    ```
 
 2. **Performance Monitoring**
-   - Access: `https://your-backend.railway.app/api/performance/metrics`
+   - Access: `https://crackzone-api.onrender.com/api/performance/metrics`
    - Admin credentials: `admin` / `a9c9e9cc59a16ea73653d31c2066c9f3`
 
 3. **Security Dashboard**
-   - Access: `https://your-backend.railway.app/api/security/dashboard`
+   - Access: `https://crackzone-api.onrender.com/api/security/dashboard`
 
 #### 🔒 **Security Verification**
 
@@ -190,11 +188,11 @@ curl https://your-backend.railway.app/api/performance/metrics
 
 ## 🆓 **Free Tier Limitations**
 
-### **Railway Free Tier**
-- ✅ 500 hours/month (enough for testing)
-- ✅ 1GB RAM
-- ✅ PostgreSQL included
-- ⚠️ Sleeps after 30 minutes of inactivity
+### **Render.com Free Tier**
+- ✅ 750 hours/month
+- ✅ PostgreSQL database included
+- ✅ Automatic HTTPS
+- ⚠️ Sleeps after 15 minutes of inactivity
 
 ### **Vercel Free Tier**
 - ✅ Unlimited static deployments
@@ -248,8 +246,8 @@ Your deployment is successful when:
 **Save these securely:**
 - **Admin Username**: `admin`
 - **Admin Password**: `a9c9e9cc59a16ea73653d31c2066c9f3`
-- **Backend URL**: `https://your-backend.railway.app`
-- **Frontend URL**: `https://your-frontend.vercel.app`
+- **Backend URL**: `https://crackzone-api.onrender.com`
+- **Frontend URL**: `https://crackzone-frontend.vercel.app`
 
 ---
 
