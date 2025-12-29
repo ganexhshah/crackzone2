@@ -17,7 +17,7 @@ const performanceMonitor = require('./scripts/performance-monitor');
 const { 
   securityHeaders, 
   corsOptions, 
-  rateLimits, 
+  // rateLimits, // Temporarily disabled
   ipFilter, 
   sanitizeRequest 
 } = require('./middleware/security');
@@ -155,20 +155,20 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes with rate limiting
-app.use('/api/auth', rateLimits.auth, authRoutes);
-app.use('/api/users', rateLimits.general, userRoutes);
-app.use('/api/tournaments', rateLimits.general, tournamentRoutes);
-app.use('/api/teams', rateLimits.general, teamRoutes);
-app.use('/api/wallet', rateLimits.general, walletRoutes);
-app.use('/api/profile', rateLimits.general, profileRoutes);
-app.use('/api/dashboard', rateLimits.general, dashboardRoutes);
-app.use('/api/notifications', rateLimits.general, notificationRoutes);
-app.use('/api/rewards', rateLimits.general, rewardsRoutes);
-app.use('/api/admin', rateLimits.admin, adminRoutes);
-app.use('/api/uploads', rateLimits.upload, uploadsRoutes);
-app.use('/api/leaderboard', rateLimits.general, leaderboardRoutes);
-app.use('/api/setup', rateLimits.general, setupRoutes);
+// Routes (temporarily without rate limiting to fix deployment)
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/tournaments', tournamentRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/rewards', rewardsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/uploads', uploadsRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/setup', setupRoutes);
 
 // Security dashboard endpoint (admin only)
 app.get('/api/security/dashboard', authenticateAdmin, (req, res) => {
