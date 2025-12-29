@@ -16,15 +16,11 @@ const tokenBlacklist = new Set();
 // Generate secure tokens
 const generateTokens = (payload) => {
   const accessToken = jwt.sign(payload, JWT_SECRET, { 
-    expiresIn: JWT_EXPIRES_IN,
-    issuer: securityConfig.jwt.issuer,
-    audience: securityConfig.jwt.audience
+    expiresIn: JWT_EXPIRES_IN
   });
   
   const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { 
-    expiresIn: JWT_REFRESH_EXPIRES_IN,
-    issuer: securityConfig.jwt.issuer,
-    audience: securityConfig.jwt.audience
+    expiresIn: JWT_REFRESH_EXPIRES_IN
   });
   
   return { accessToken, refreshToken };
@@ -33,10 +29,7 @@ const generateTokens = (payload) => {
 // Verify JWT token
 const verifyToken = (token, secret = JWT_SECRET) => {
   try {
-    return jwt.verify(token, secret, {
-      issuer: securityConfig.jwt.issuer,
-      audience: securityConfig.jwt.audience
-    });
+    return jwt.verify(token, secret);
   } catch (error) {
     throw new Error('Invalid token');
   }
@@ -61,7 +54,7 @@ const authenticateToken = async (req, res, next) => {
     
     // Check if user still exists and is active
     const userResult = await pool.query(
-      'SELECT id, username, email, is_active, is_banned, last_login FROM users WHERE id = $1',
+      'SELECT id, username, email, is_active FROM users WHERE id = $1',
       [decoded.userId]
     );
 
@@ -71,15 +64,9 @@ const authenticateToken = async (req, res, next) => {
 
     const user = userResult.rows[0];
 
-    if (!user.is_active || user.is_banned) {
-      return res.status(401).json({ error: 'Account is inactive or banned' });
+    if (!user.is_active) {
+      return res.status(401).json({ error: 'Account is inactive' });
     }
-
-    // Update last activity
-    await pool.query(
-      'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
-      [user.id]
-    );
 
     req.user = {
       id: user.id,
