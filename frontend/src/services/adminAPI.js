@@ -2,10 +2,10 @@
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     // Production - use environment variable or default
-    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com';
+    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com/api';
   } else {
     // Development
-    return 'http://localhost:5000';
+    return 'http://localhost:5000/api';
   }
 };
 
@@ -13,7 +13,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 class AdminAPI {
   constructor() {
-    this.baseURL = `${API_BASE_URL}/api/admin`;
+    this.baseURL = `${API_BASE_URL}/admin`;
   }
 
   getAuthHeaders() {
