@@ -4,7 +4,7 @@ import axios from 'axios';
 const getApiBaseUrl = () => {
   if (import.meta.env.PROD) {
     // Production - use environment variable or default
-    return import.meta.env.VITE_API_URL || 'https://your-api-domain.railway.app/api';
+    return import.meta.env.VITE_API_URL || 'https://crackzone2.onrender.com/api';
   } else {
     // Development
     return 'http://localhost:5000/api';
