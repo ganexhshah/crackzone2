@@ -353,7 +353,7 @@ router.post('/complete-profile', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, username, email, profile_picture_url, is_profile_complete, primary_game FROM users WHERE id = $1',
+      'SELECT id, username, email, is_profile_complete, auth_provider FROM users WHERE id = $1',
       [req.user.id]
     );
 
@@ -363,16 +363,13 @@ router.get('/me', authenticateToken, async (req, res) => {
 
     const user = result.rows[0];
 
-    // Get game profiles
-    const gameProfiles = await pool.query(
-      'SELECT game, game_uid, game_username, is_primary FROM game_profiles WHERE user_id = $1',
-      [user.id]
-    );
-
     res.json({ 
       user: {
-        ...user,
-        gameProfiles: gameProfiles.rows
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isProfileComplete: user.is_profile_complete,
+        authProvider: user.auth_provider
       }
     });
   } catch (error) {
