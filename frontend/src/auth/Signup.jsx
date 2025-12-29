@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Rocket, Flame, Target, Zap } from 'lucide-react'
 import CrackZoneLogo from '../components/CrackZoneLogo'
 import { useAuth } from '../contexts/AuthContext'
-import { getGoogleAuthUrl } from '../utils/debug'
+import { getGoogleOAuthUrl } from '../utils/urls'
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -258,7 +258,7 @@ const Signup = () => {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <a
-                href={getGoogleAuthUrl()}
+                href={getGoogleOAuthUrl()}
                 className="w-full inline-flex justify-center py-3 px-4 border border-crackzone-yellow/30 rounded-lg bg-crackzone-black/50 text-sm font-medium text-gray-300 hover:bg-crackzone-yellow/10 hover:border-crackzone-yellow/50 transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

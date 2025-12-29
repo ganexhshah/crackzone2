@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { getCorrectApiUrl } from '../utils/debug';
+import { getApiUrl } from '../utils/urls';
 
 // Get API base URL
-const API_BASE_URL = getCorrectApiUrl();
+const API_BASE_URL = getApiUrl();
 
 // Create axios instance with default config
 const api = axios.create({

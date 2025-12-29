@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Gamepad2 } from 'lucide-react'
 import CrackZoneLogo from '../components/CrackZoneLogo'
 import { useAuth } from '../contexts/AuthContext'
-import { getGoogleAuthUrl, debugEnv } from '../utils/debug'
+import { getGoogleOAuthUrl } from '../utils/urls'
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -19,9 +19,6 @@ const Login = () => {
   const [searchParams] = useSearchParams()
 
   useEffect(() => {
-    // Debug environment variables
-    debugEnv();
-    
     // Check for error in URL parameters
     const urlError = searchParams.get('error')
     if (urlError === 'auth_failed') {
@@ -166,7 +163,7 @@ const Login = () => {
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               <a
-                href={getGoogleAuthUrl()}
+                href={getGoogleOAuthUrl()}
                 className="w-full inline-flex justify-center py-3 px-4 border border-crackzone-yellow/30 rounded-lg bg-crackzone-black/50 text-sm font-medium text-gray-300 hover:bg-crackzone-yellow/10 hover:border-crackzone-yellow/50 transition-colors"
                 title="Sign in with Google"
               >

@@ -1,7 +1,7 @@
-import { getCorrectApiUrl } from '../utils/debug';
+import { getApiUrl } from '../utils/urls';
 
 // Get API base URL
-const API_BASE_URL = getCorrectApiUrl();
+const API_BASE_URL = getApiUrl();
 
 class AdminAPI {
   constructor() {
