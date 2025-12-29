@@ -10,6 +10,34 @@ const passport = require('./config/passport');
 
 // Import configurations
 const pool = require('./config/database');
+const { initializeSecurity } = require('./config/security');
+const performanceMonitor = require('./scripts/performance-monitor');
+
+// Import security middleware
+const { 
+  securityHeaders, 
+  corsOptions, 
+  rateLimits, 
+  ipFilter, 
+  sanitizeRequest 
+} = require('./middleware/security');
+const { 
+  sanitizeRequestData, 
+  handleValidationErrors 
+} = require('./middleware/validation');
+const { 
+  authenticateToken, 
+  authenticateAdmin 
+} = require('./middleware/auth');
+const { 
+  secureDbMiddleware, 
+  setupDatabaseSecurity 
+} = require('./middleware/database');
+const { 
+  securityLoggingMiddleware, 
+  ipBlockingMiddleware,
+  securityMonitor 
+} = require('./middleware/monitoring');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -31,20 +59,27 @@ const PORT = process.env.PORT || 5000;
 // Trust proxy for accurate IP addresses behind load balancers
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:", "http:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "https:", "http:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}));
+// Initialize database security
+setupDatabaseSecurity();
+
+// IP blocking middleware (first line of defense)
+app.use(ipBlockingMiddleware);
+
+// Security logging middleware
+app.use(securityLoggingMiddleware);
+
+// Performance monitoring middleware
+app.use(performanceMonitor.trackRequest());
+
+// Enhanced security headers
+app.use(securityHeaders);
+
+// Request sanitization
+app.use(sanitizeRequest);
+app.use(sanitizeRequestData);
+
+// IP filtering
+app.use(ipFilter);
 
 // Compression middleware for better performance
 app.use(compression({
@@ -63,13 +98,8 @@ app.use(morgan('combined', {
   skip: (req, res) => res.statusCode < 400
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5174',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+// Enhanced CORS configuration
+app.use(cors(corsOptions));
 
 // Session middleware (required for passport)
 app.use(session({
@@ -86,7 +116,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Body parsing middleware with size limits
+// Body parsing middleware with size limits and security
 app.use(express.json({ 
   limit: '10mb',
   verify: (req, res, buf) => {
@@ -97,6 +127,9 @@ app.use(express.urlencoded({
   extended: true, 
   limit: '10mb' 
 }));
+
+// Secure database middleware
+app.use(secureDbMiddleware);
 
 // Health check endpoint (no rate limiting)
 app.get('/health', async (req, res) => {
@@ -121,23 +154,77 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/tournaments', tournamentRoutes);
-app.use('/api/teams', teamRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/rewards', rewardsRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/uploads', uploadsRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
+// Routes with rate limiting
+app.use('/api/auth', rateLimits.auth, authRoutes);
+app.use('/api/users', rateLimits.general, userRoutes);
+app.use('/api/tournaments', rateLimits.general, tournamentRoutes);
+app.use('/api/teams', rateLimits.general, teamRoutes);
+app.use('/api/wallet', rateLimits.general, walletRoutes);
+app.use('/api/profile', rateLimits.general, profileRoutes);
+app.use('/api/dashboard', rateLimits.general, dashboardRoutes);
+app.use('/api/notifications', rateLimits.general, notificationRoutes);
+app.use('/api/rewards', rateLimits.general, rewardsRoutes);
+app.use('/api/admin', rateLimits.admin, adminRoutes);
+app.use('/api/uploads', rateLimits.upload, uploadsRoutes);
+app.use('/api/leaderboard', rateLimits.general, leaderboardRoutes);
 
-// Error handling middleware
+// Security dashboard endpoint (admin only)
+app.get('/api/security/dashboard', authenticateAdmin, (req, res) => {
+  const dashboard = securityMonitor.getSecurityDashboard();
+  res.json(dashboard);
+});
+
+// Security alerts endpoint (admin only)
+app.get('/api/security/alerts', authenticateAdmin, (req, res) => {
+  const alerts = securityMonitor.alerts.filter(alert => alert.status === 'active');
+  res.json(alerts);
+});
+
+// Block IP endpoint (admin only)
+app.post('/api/security/block-ip', authenticateAdmin, async (req, res) => {
+  const { ip, reason } = req.body;
+  
+  if (!ip || !reason) {
+    return res.status(400).json({ error: 'IP address and reason are required' });
+  }
+  
+  await securityMonitor.blockIP(ip, reason);
+  res.json({ message: `IP ${ip} has been blocked` });
+});
+
+// Performance monitoring endpoints
+app.get('/api/performance/metrics', authenticateAdmin, (req, res) => {
+  const metrics = performanceMonitor.getMetrics();
+  res.json(metrics);
+});
+
+app.get('/api/performance/report', authenticateAdmin, (req, res) => {
+  const report = performanceMonitor.generateReport();
+  res.json(report);
+});
+
+// Error handling middleware with security logging
 app.use((err, req, res, next) => {
   console.error('Error:', err);
+  
+  // Log security-related errors
+  if (err.status === 401 || err.status === 403 || err.status === 429) {
+    securityMonitor.logSecurityEvent({
+      type: 'security_error',
+      severity: 'medium',
+      message: err.message,
+      source: {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        userId: req.user?.id
+      },
+      details: {
+        path: req.path,
+        method: req.method,
+        statusCode: err.status
+      }
+    });
+  }
   
   // Rate limiting errors
   if (err.status === 429) {
@@ -164,6 +251,14 @@ app.use((err, req, res, next) => {
     });
   }
   
+  // Security errors
+  if (err.message.includes('malicious') || err.message.includes('suspicious')) {
+    return res.status(403).json({
+      error: 'Security violation detected',
+      message: 'Request blocked for security reasons'
+    });
+  }
+  
   // Default error response
   res.status(err.status || 500).json({
     error: process.env.NODE_ENV === 'production' 
@@ -185,6 +280,12 @@ app.use('*', (req, res) => {
 // Initialize server
 const initializeServer = async () => {
   try {
+    // Initialize security configuration
+    initializeSecurity();
+    
+    // Start performance monitoring
+    performanceMonitor.startMonitoring();
+    
     // Test database connection
     await pool.query('SELECT NOW()');
     console.log('✅ Database connection verified');

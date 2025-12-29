@@ -1,0 +1,78 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Warm up phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm up"
+    
+    # Gradual load increase
+    - duration: 60
+      arrivalRate: 20
+      name: "Light load"
+    
+    # Medium load
+    - duration: 120
+      arrivalRate: 50
+      name: "Medium load"
+    
+    # Heavy load
+    - duration: 60
+      arrivalRate: 100
+      name: "Heavy load"
+    
+    # Stress test
+    - duration: 30
+      arrivalRate: 200
+      name: "Stress test"
+
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+
+scenarios:
+  - name: "Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "User Registration"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            username: "testuser{{ $randomString() }}"
+            email: "test{{ $randomString() }}@example.com"
+            password: "TestPassword123!"
+            fullName: "Test User"
+
+  - name: "User Login"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "wrongpassword"
+
+  - name: "Tournament List"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/tournaments"
+          qs:
+            page: 1
+            limit: 10
+
+  - name: "Leaderboard"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/leaderboard"
+          qs:
+            game: "pubg"
+            page: 1

@@ -149,6 +149,14 @@ const AdminDashboard = () => {
             <h3 className="text-lg font-medium text-gray-900 mb-2">Manual Payments</h3>
             <p className="text-gray-600">Verify manual payment submissions</p>
           </div>
+
+          <div 
+            className="bg-white p-6 rounded-lg shadow cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => navigate('/admin/rewards')}
+          >
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Reward System</h3>
+            <p className="text-gray-600">Manage rewards, achievements, and challenges</p>
+          </div>
         </div>
       </div>
     </AdminLayout>

@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Determine API base URL based on environment
+const getApiBaseUrl = () => {
+  if (import.meta.env.PROD) {
+    // Production - use environment variable or default
+    return import.meta.env.VITE_API_URL || 'https://your-api-domain.railway.app/api';
+  } else {
+    // Development
+    return 'http://localhost:5000/api';
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // Create axios instance with default config
 const api = axios.create({

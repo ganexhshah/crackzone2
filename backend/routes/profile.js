@@ -36,7 +36,10 @@ router.get('/', authenticateToken, async (req, res) => {
 
     // Get game profiles
     const gameProfilesResult = await pool.query(
-      'SELECT game, game_uid, game_username, is_primary FROM game_profiles WHERE user_id = $1',
+      `SELECT game, game_uid, game_username, is_primary 
+       FROM game_profiles 
+       WHERE user_id = $1 
+       ORDER BY is_primary DESC, game`,
       [userId]
     );
 
@@ -217,6 +220,13 @@ router.put('/', authenticateToken, async (req, res) => {
 
       // Update game profile if provided
       if (gameId && favoriteGame) {
+        // First, remove any existing primary game profiles for this user
+        await pool.query(
+          'UPDATE game_profiles SET is_primary = false WHERE user_id = $1',
+          [userId]
+        );
+
+        // Insert or update the game profile with case-insensitive matching
         await pool.query(
           `INSERT INTO game_profiles (user_id, game, game_uid, is_primary)
            VALUES ($1, $2, $3, true)
@@ -225,7 +235,15 @@ router.put('/', authenticateToken, async (req, res) => {
              game_uid = $3,
              is_primary = true,
              updated_at = CURRENT_TIMESTAMP`,
-          [userId, favoriteGame.toLowerCase(), gameId]
+          [userId, favoriteGame, gameId]
+        );
+
+        // Also handle case where game might exist in different case
+        await pool.query(
+          `UPDATE game_profiles 
+           SET game_uid = $3, is_primary = true, updated_at = CURRENT_TIMESTAMP
+           WHERE user_id = $1 AND LOWER(game) = LOWER($2) AND game != $2`,
+          [userId, favoriteGame, gameId]
         );
       }
 
@@ -473,7 +491,10 @@ router.get('/public/:username', async (req, res) => {
 
     // Get game profiles
     const gameProfilesResult = await pool.query(
-      'SELECT game, game_uid, game_username, is_primary FROM game_profiles WHERE user_id = $1',
+      `SELECT game, game_uid, game_username, is_primary 
+       FROM game_profiles 
+       WHERE user_id = $1 
+       ORDER BY is_primary DESC, game`,
       [user.id]
     );
 

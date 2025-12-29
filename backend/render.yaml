@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: crackzone-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crackzone-db
+          property: connectionString
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+
+databases:
+  - name: crackzone-db
+    databaseName: crackzone_db
+    user: crackzone_user
+    plan: free

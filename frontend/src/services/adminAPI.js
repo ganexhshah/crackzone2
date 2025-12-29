@@ -545,6 +545,178 @@ class AdminAPI {
 
     return response.json();
   }
+
+  // Reward Management APIs
+  async getRedeemableRewards() {
+    const response = await fetch(`${this.baseURL}/rewards`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch rewards');
+    }
+
+    return response.json();
+  }
+
+  async createReward(data) {
+    const response = await fetch(`${this.baseURL}/rewards`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create reward');
+    }
+
+    return response.json();
+  }
+
+  async updateReward(id, data) {
+    const response = await fetch(`${this.baseURL}/rewards/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update reward');
+    }
+
+    return response.json();
+  }
+
+  async deleteReward(id) {
+    const response = await fetch(`${this.baseURL}/rewards/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete reward');
+    }
+
+    return response.json();
+  }
+
+  async getAchievements() {
+    const response = await fetch(`${this.baseURL}/achievements`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch achievements');
+    }
+
+    return response.json();
+  }
+
+  async createAchievement(data) {
+    const response = await fetch(`${this.baseURL}/achievements`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create achievement');
+    }
+
+    return response.json();
+  }
+
+  async updateAchievement(id, data) {
+    const response = await fetch(`${this.baseURL}/achievements/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update achievement');
+    }
+
+    return response.json();
+  }
+
+  async deleteAchievement(id) {
+    const response = await fetch(`${this.baseURL}/achievements/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete achievement');
+    }
+
+    return response.json();
+  }
+
+  async getChallenges() {
+    const response = await fetch(`${this.baseURL}/challenges`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch challenges');
+    }
+
+    return response.json();
+  }
+
+  async createChallenge(data) {
+    const response = await fetch(`${this.baseURL}/challenges`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create challenge');
+    }
+
+    return response.json();
+  }
+
+  async updateChallenge(id, data) {
+    const response = await fetch(`${this.baseURL}/challenges/${id}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update challenge');
+    }
+
+    return response.json();
+  }
+
+  async deleteChallenge(id) {
+    const response = await fetch(`${this.baseURL}/challenges/${id}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete challenge');
+    }
+
+    return response.json();
+  }
+
+  async getUserRewards() {
+    const response = await fetch(`${this.baseURL}/user-rewards`, {
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user rewards');
+    }
+
+    return response.json();
+  }
 }
 
 export const adminAPI = new AdminAPI();

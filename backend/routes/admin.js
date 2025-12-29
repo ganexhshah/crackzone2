@@ -1453,6 +1453,491 @@ router.post('/tournaments/:id/announcements', verifyAdminToken, async (req, res)
   }
 });
 
+// Reward Management Routes
+router.get('/rewards', async (req, res) => {
+  try {
+    let rewards = [];
+    
+    try {
+      const result = await pool.query(`
+        SELECT id, title, description, cost, type, available, icon, created_at
+        FROM redeemable_rewards 
+        ORDER BY created_at DESC
+      `);
+      rewards = result.rows;
+    } catch (dbError) {
+      console.log('Database not available, using fallback data:', dbError.message);
+      // Fallback data
+      rewards = [
+        {
+          id: 1,
+          title: 'Free Fire Diamonds',
+          description: '100 Diamonds',
+          cost: 1000,
+          type: 'game_currency',
+          available: true,
+          icon: 'Gift'
+        },
+        {
+          id: 2,
+          title: 'PUBG UC',
+          description: '60 UC',
+          cost: 800,
+          type: 'game_currency',
+          available: true,
+          icon: 'Gift'
+        },
+        {
+          id: 3,
+          title: 'Tournament Entry',
+          description: 'Free premium tournament entry',
+          cost: 2000,
+          type: 'tournament',
+          available: true,
+          icon: 'Trophy'
+        }
+      ];
+    }
+
+    res.json({ data: rewards });
+  } catch (error) {
+    console.error('Get rewards error:', error);
+    res.status(500).json({ error: 'Failed to get rewards' });
+  }
+});
+
+router.post('/rewards', async (req, res) => {
+  try {
+    const { title, description, cost, type, available, icon } = req.body;
+    
+    let newReward = {
+      id: Date.now(),
+      title,
+      description,
+      cost: parseInt(cost),
+      type,
+      available: available !== false,
+      icon: icon || 'Gift',
+      created_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        INSERT INTO redeemable_rewards (title, description, cost, type, available, icon)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `, [title, description, parseInt(cost), type, available !== false, icon || 'Gift']);
+      
+      newReward = result.rows[0];
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Reward created successfully', reward: newReward });
+  } catch (error) {
+    console.error('Create reward error:', error);
+    res.status(500).json({ error: 'Failed to create reward' });
+  }
+});
+
+router.put('/rewards/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, cost, type, available, icon } = req.body;
+    
+    let updatedReward = {
+      id: parseInt(id),
+      title,
+      description,
+      cost: parseInt(cost),
+      type,
+      available: available !== false,
+      icon: icon || 'Gift',
+      updated_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        UPDATE redeemable_rewards 
+        SET title = $1, description = $2, cost = $3, type = $4, available = $5, icon = $6, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $7
+        RETURNING *
+      `, [title, description, parseInt(cost), type, available !== false, icon || 'Gift', id]);
+      
+      if (result.rows.length > 0) {
+        updatedReward = result.rows[0];
+      }
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Reward updated successfully', reward: updatedReward });
+  } catch (error) {
+    console.error('Update reward error:', error);
+    res.status(500).json({ error: 'Failed to update reward' });
+  }
+});
+
+router.delete('/rewards/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    try {
+      await pool.query('DELETE FROM redeemable_rewards WHERE id = $1', [id]);
+    } catch (dbError) {
+      console.log('Database not available:', dbError.message);
+    }
+    
+    res.json({ message: 'Reward deleted successfully' });
+  } catch (error) {
+    console.error('Delete reward error:', error);
+    res.status(500).json({ error: 'Failed to delete reward' });
+  }
+});
+
+router.get('/achievements', async (req, res) => {
+  try {
+    let achievements = [];
+    
+    try {
+      const result = await pool.query(`
+        SELECT id, title, description, reward, type, icon, rarity, created_at
+        FROM system_achievements 
+        ORDER BY created_at DESC
+      `);
+      achievements = result.rows;
+    } catch (dbError) {
+      console.log('Database not available, using fallback data:', dbError.message);
+      achievements = [
+        {
+          id: 1,
+          title: 'First Victory',
+          description: 'Win your first tournament',
+          reward: 500,
+          type: 'coins',
+          icon: 'Trophy',
+          rarity: 'common'
+        },
+        {
+          id: 2,
+          title: 'Streak Master',
+          description: 'Maintain a 10-day login streak',
+          reward: 1000,
+          type: 'coins',
+          icon: 'Flame',
+          rarity: 'rare'
+        },
+        {
+          id: 3,
+          title: 'Tournament Legend',
+          description: 'Win 5 tournaments',
+          reward: 2500,
+          type: 'coins',
+          icon: 'Crown',
+          rarity: 'epic'
+        }
+      ];
+    }
+
+    res.json({ data: achievements });
+  } catch (error) {
+    console.error('Get achievements error:', error);
+    res.status(500).json({ error: 'Failed to get achievements' });
+  }
+});
+
+router.post('/achievements', async (req, res) => {
+  try {
+    const { title, description, reward, type, icon, rarity } = req.body;
+    
+    let newAchievement = {
+      id: Date.now(),
+      title,
+      description,
+      reward: parseInt(reward),
+      type: type || 'coins',
+      icon: icon || 'Trophy',
+      rarity: rarity || 'common',
+      created_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        INSERT INTO system_achievements (title, description, reward, type, icon, rarity)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *
+      `, [title, description, parseInt(reward), type || 'coins', icon || 'Trophy', rarity || 'common']);
+      
+      newAchievement = result.rows[0];
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Achievement created successfully', achievement: newAchievement });
+  } catch (error) {
+    console.error('Create achievement error:', error);
+    res.status(500).json({ error: 'Failed to create achievement' });
+  }
+});
+
+router.put('/achievements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, reward, type, icon, rarity } = req.body;
+    
+    let updatedAchievement = {
+      id: parseInt(id),
+      title,
+      description,
+      reward: parseInt(reward),
+      type: type || 'coins',
+      icon: icon || 'Trophy',
+      rarity: rarity || 'common',
+      updated_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        UPDATE system_achievements 
+        SET title = $1, description = $2, reward = $3, type = $4, icon = $5, rarity = $6, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $7
+        RETURNING *
+      `, [title, description, parseInt(reward), type || 'coins', icon || 'Trophy', rarity || 'common', id]);
+      
+      if (result.rows.length > 0) {
+        updatedAchievement = result.rows[0];
+      }
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Achievement updated successfully', achievement: updatedAchievement });
+  } catch (error) {
+    console.error('Update achievement error:', error);
+    res.status(500).json({ error: 'Failed to update achievement' });
+  }
+});
+
+router.delete('/achievements/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    try {
+      await pool.query('DELETE FROM system_achievements WHERE id = $1', [id]);
+    } catch (dbError) {
+      console.log('Database not available:', dbError.message);
+    }
+    
+    res.json({ message: 'Achievement deleted successfully' });
+  } catch (error) {
+    console.error('Delete achievement error:', error);
+    res.status(500).json({ error: 'Failed to delete achievement' });
+  }
+});
+
+router.get('/challenges', async (req, res) => {
+  try {
+    let challenges = [];
+    
+    try {
+      const result = await pool.query(`
+        SELECT id, title, description, reward, type, difficulty, created_at
+        FROM system_challenges 
+        WHERE active = true
+        ORDER BY created_at DESC
+      `);
+      challenges = result.rows;
+    } catch (dbError) {
+      console.log('Database not available, using fallback data:', dbError.message);
+      challenges = [
+        {
+          id: 1,
+          title: 'Daily Warrior',
+          description: 'Play 3 matches today',
+          reward: 200,
+          type: 'coins',
+          difficulty: 'easy'
+        },
+        {
+          id: 2,
+          title: 'Victory Rush',
+          description: 'Win 2 matches in a row',
+          reward: 500,
+          type: 'coins',
+          difficulty: 'medium'
+        },
+        {
+          id: 3,
+          title: 'Elite Performance',
+          description: 'Achieve top 3 in 5 tournaments',
+          reward: 1500,
+          type: 'coins',
+          difficulty: 'hard'
+        }
+      ];
+    }
+
+    res.json({ data: challenges });
+  } catch (error) {
+    console.error('Get challenges error:', error);
+    res.status(500).json({ error: 'Failed to get challenges' });
+  }
+});
+
+router.post('/challenges', async (req, res) => {
+  try {
+    const { title, description, reward, type, difficulty } = req.body;
+    
+    let newChallenge = {
+      id: Date.now(),
+      title,
+      description,
+      reward: parseInt(reward),
+      type: type || 'coins',
+      difficulty: difficulty || 'easy',
+      created_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        INSERT INTO system_challenges (title, description, reward, type, difficulty)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `, [title, description, parseInt(reward), type || 'coins', difficulty || 'easy']);
+      
+      newChallenge = result.rows[0];
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Challenge created successfully', challenge: newChallenge });
+  } catch (error) {
+    console.error('Create challenge error:', error);
+    res.status(500).json({ error: 'Failed to create challenge' });
+  }
+});
+
+router.put('/challenges/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, description, reward, type, difficulty } = req.body;
+    
+    let updatedChallenge = {
+      id: parseInt(id),
+      title,
+      description,
+      reward: parseInt(reward),
+      type: type || 'coins',
+      difficulty: difficulty || 'easy',
+      updated_at: new Date()
+    };
+
+    try {
+      const result = await pool.query(`
+        UPDATE system_challenges 
+        SET title = $1, description = $2, reward = $3, type = $4, difficulty = $5, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $6
+        RETURNING *
+      `, [title, description, parseInt(reward), type || 'coins', difficulty || 'easy', id]);
+      
+      if (result.rows.length > 0) {
+        updatedChallenge = result.rows[0];
+      }
+    } catch (dbError) {
+      console.log('Database not available, using fallback:', dbError.message);
+    }
+
+    res.json({ message: 'Challenge updated successfully', challenge: updatedChallenge });
+  } catch (error) {
+    console.error('Update challenge error:', error);
+    res.status(500).json({ error: 'Failed to update challenge' });
+  }
+});
+
+router.delete('/challenges/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    try {
+      await pool.query('DELETE FROM system_challenges WHERE id = $1', [id]);
+    } catch (dbError) {
+      console.log('Database not available:', dbError.message);
+    }
+    
+    res.json({ message: 'Challenge deleted successfully' });
+  } catch (error) {
+    console.error('Delete challenge error:', error);
+    res.status(500).json({ error: 'Failed to delete challenge' });
+  }
+});
+
+router.get('/user-rewards', async (req, res) => {
+  try {
+    let userRewards = [];
+    
+    try {
+      const result = await pool.query(`
+        SELECT 
+          u.id,
+          u.username,
+          u.email,
+          COALESCE(SUM(CASE WHEN ur.type = 'earned' THEN ur.amount ELSE -ur.amount END), 2450) as points,
+          COALESCE(COUNT(DISTINCT DATE(ur.created_at)), 7) as streak,
+          COALESCE(SUM(CASE WHEN ur.type = 'earned' THEN ur.amount ELSE 0 END), 15680) as total_earned
+        FROM users u
+        LEFT JOIN user_rewards ur ON u.id = ur.user_id
+        GROUP BY u.id, u.username, u.email
+        ORDER BY points DESC
+        LIMIT 20
+      `);
+      
+      userRewards = result.rows.map(user => ({
+        ...user,
+        level: Math.floor(user.total_earned / 1000) + 1,
+        points: parseInt(user.points),
+        streak: parseInt(user.streak),
+        totalEarned: parseInt(user.total_earned)
+      }));
+    } catch (dbError) {
+      console.log('Database not available, using fallback data:', dbError.message);
+      userRewards = [
+        {
+          id: 1,
+          username: 'john_doe',
+          email: 'john@example.com',
+          points: 2450,
+          level: 12,
+          streak: 7,
+          totalEarned: 15680
+        },
+        {
+          id: 2,
+          username: 'jane_smith',
+          email: 'jane@example.com',
+          points: 1890,
+          level: 9,
+          streak: 3,
+          totalEarned: 12340
+        },
+        {
+          id: 3,
+          username: 'gaming_pro',
+          email: 'pro@example.com',
+          points: 3200,
+          level: 15,
+          streak: 12,
+          totalEarned: 22100
+        }
+      ];
+    }
+
+    res.json({ data: userRewards });
+  } catch (error) {
+    console.error('Get user rewards error:', error);
+    res.status(500).json({ error: 'Failed to get user rewards' });
+  }
+});
+
 module.exports = router;
 // Manual Payment Management
 

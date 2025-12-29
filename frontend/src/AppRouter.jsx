@@ -21,8 +21,7 @@ import Wallet from './app/Wallet'
 import Rewards from './app/Rewards'
 import Notifications from './app/Notifications'
 import Leaderboard from './app/Leaderboard'
-import TestManualPayment from './components/TestManualPayment'
-import TestGameFlow from './components/TestGameFlow'
+
 import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
 import TournamentManagement from './admin/TournamentManagement'
@@ -31,6 +30,7 @@ import TeamManagement from './admin/TeamManagement'
 import ManualPaymentManagement from './admin/ManualPaymentManagement'
 import PaymentMethodSettings from './admin/PaymentMethodSettings'
 import TournamentAdminPanel from './admin/TournamentAdminPanel'
+import RewardManagement from './admin/RewardManagement'
 import AdminProtectedRoute from './admin/AdminProtectedRoute'
 
 const AppRouter = () => {
@@ -118,10 +118,7 @@ const AppRouter = () => {
               <Leaderboard />
             </ProtectedRoute>
           } />
-          
-          {/* Test Routes */}
-          <Route path="/test-manual-payment" element={<TestManualPayment />} />
-          <Route path="/test-game-flow" element={<TestGameFlow />} />
+
           
           {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
@@ -159,6 +156,11 @@ const AppRouter = () => {
           <Route path="/admin/payment-settings" element={
             <AdminProtectedRoute>
               <PaymentMethodSettings />
+            </AdminProtectedRoute>
+          } />
+          <Route path="/admin/rewards" element={
+            <AdminProtectedRoute>
+              <RewardManagement />
             </AdminProtectedRoute>
           } />
         </Routes>

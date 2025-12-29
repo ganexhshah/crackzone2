@@ -91,7 +91,8 @@ const Profile = () => {
         username: data.user.username,
         bio: data.user.bio,
         favoriteGame: data.user.favoriteGame,
-        gameId: data.gameProfiles.find(gp => gp.is_primary)?.game_uid || ''
+        gameId: data.gameProfiles.find(gp => gp.is_primary || 
+          gp.game?.toLowerCase() === data.user.favoriteGame?.toLowerCase())?.game_uid || ''
       })
       
       // Set settings data
@@ -113,8 +114,21 @@ const Profile = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault()
+    
+    // Validation
+    if (!editFormData.favoriteGame) {
+      setError('Please select a favorite game')
+      return
+    }
+    
+    if (!editFormData.gameId) {
+      setError('Please enter your game ID')
+      return
+    }
+    
     try {
       setLoading(true)
+      setError('')
       await profileAPI.updateProfile({
         username: editFormData.username,
         bio: editFormData.bio,
@@ -341,7 +355,15 @@ const Profile = () => {
             {/* Game Info */}
             <div className="grid md:grid-cols-2 gap-6">
               <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Game Information</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Game Information</h3>
+                  <button 
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="text-crackzone-yellow hover:text-yellow-400 transition-colors text-sm font-medium"
+                  >
+                    Setup Game
+                  </button>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Favorite Game:</span>
@@ -350,7 +372,8 @@ const Profile = () => {
                   <div className="flex justify-between">
                     <span className="text-gray-400">Game ID:</span>
                     <span className="text-white font-medium">
-                      {userProfile.gameProfiles?.find(gp => gp.is_primary)?.game_uid || 'Not set'}
+                      {userProfile.gameProfiles?.find(gp => gp.is_primary || 
+                        gp.game?.toLowerCase() === userProfile?.favoriteGame?.toLowerCase())?.game_uid || 'Not set'}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -358,6 +381,25 @@ const Profile = () => {
                     <span className="text-crackzone-yellow font-medium">{userProfile.rank}</span>
                   </div>
                 </div>
+                
+                {/* Game Setup Alert */}
+                {(!userProfile.favoriteGame || !userProfile.gameProfiles?.find(gp => gp.is_primary)?.game_uid) && (
+                  <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gamepad2 className="w-4 h-4 text-yellow-400" />
+                      <span className="text-yellow-400 font-medium text-sm">Setup Required</span>
+                    </div>
+                    <p className="text-yellow-300 text-xs mb-3">
+                      Complete your game profile to participate in tournaments
+                    </p>
+                    <button 
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="w-full bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Setup Game Profile
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="bg-crackzone-gray/50 backdrop-blur-sm border border-crackzone-yellow/20 rounded-xl p-6">
@@ -479,6 +521,12 @@ const Profile = () => {
             </div>
 
             <form className="space-y-4">
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Username
@@ -511,27 +559,65 @@ const Profile = () => {
                 </label>
                 <select
                   value={editFormData.favoriteGame}
-                  onChange={(e) => setEditFormData({...editFormData, favoriteGame: e.target.value})}
+                  onChange={(e) => {
+                    setEditFormData({
+                      ...editFormData, 
+                      favoriteGame: e.target.value,
+                      gameId: '' // Reset game ID when changing game
+                    })
+                  }}
                   className="w-full px-4 py-3 bg-crackzone-black/50 border border-crackzone-yellow/30 rounded-lg text-white focus:outline-none focus:border-crackzone-yellow"
                 >
+                  <option value="">Select a game</option>
                   <option value="FreeFire">FreeFire</option>
                   <option value="PUBG">PUBG Mobile</option>
-                  <option value="Mobile Legends">Mobile Legends</option>
-                  <option value="Call of Duty">Call of Duty Mobile</option>
                 </select>
+                <p className="text-xs text-gray-400 mt-1">
+                  Choose your primary game for tournaments
+                </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Game ID
-                </label>
-                <input
-                  type="text"
-                  value={editFormData.gameId}
-                  onChange={(e) => setEditFormData({...editFormData, gameId: e.target.value})}
-                  className="w-full px-4 py-3 bg-crackzone-black/50 border border-crackzone-yellow/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-crackzone-yellow"
-                />
-              </div>
+              {editFormData.favoriteGame && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    {editFormData.favoriteGame === 'FreeFire' ? 'FreeFire UID' : 'PUBG ID'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.gameId}
+                    onChange={(e) => setEditFormData({...editFormData, gameId: e.target.value})}
+                    placeholder={
+                      editFormData.favoriteGame === 'FreeFire' 
+                        ? 'Enter your FreeFire UID (e.g., 123456789)' 
+                        : 'Enter your PUBG ID'
+                    }
+                    className="w-full px-4 py-3 bg-crackzone-black/50 border border-crackzone-yellow/30 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-crackzone-yellow"
+                  />
+                  <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gamepad2 className="w-4 h-4 text-blue-400" />
+                      <span className="text-blue-400 font-medium text-sm">
+                        How to find your {editFormData.favoriteGame} ID:
+                      </span>
+                    </div>
+                    {editFormData.favoriteGame === 'FreeFire' ? (
+                      <div className="text-blue-300 text-xs space-y-1">
+                        <p>1. Open FreeFire game</p>
+                        <p>2. Go to Profile section</p>
+                        <p>3. Your UID is displayed at the top</p>
+                        <p>4. Copy and paste it here</p>
+                      </div>
+                    ) : (
+                      <div className="text-blue-300 text-xs space-y-1">
+                        <p>1. Open PUBG Mobile game</p>
+                        <p>2. Go to your Profile</p>
+                        <p>3. Find your Player ID</p>
+                        <p>4. Copy and paste it here</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-4">
                 <button
@@ -544,8 +630,8 @@ const Profile = () => {
                 <button
                   type="submit"
                   onClick={handleUpdateProfile}
-                  disabled={loading}
-                  className="flex-1 bg-crackzone-yellow text-crackzone-black py-3 rounded-lg font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  disabled={loading || !editFormData.favoriteGame || !editFormData.gameId}
+                  className="flex-1 bg-crackzone-yellow text-crackzone-black py-3 rounded-lg font-bold hover:bg-yellow-400 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {loading ? 'Saving...' : 'Save Changes'}
